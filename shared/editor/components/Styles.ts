@@ -1905,9 +1905,29 @@ del[data-operation-index] {
 }
 
 .toggle-block {
-    display: flex;
+  display: flex;
 
+  &.folded {
+    &:dir(rtl) {
+      --rotate-by: 90deg;
+    }
+    &:dir(ltr) {
+      --rotate-by: -90deg;
+    }
+    > .toggle-block-content > :not(:first-child) {
+        display: none;
+      }
     > .toggle-block-button {
+        svg {
+          transform: rotate(var(--rotate-by));
+          pointer-events: none;
+        }
+        transition-delay: 0.1s;
+        opacity: 1;
+     }
+  }
+
+  > .toggle-block-button {
       color: ${props.theme.text};
       opacity: 0.75;
       cursor: var(--pointer);
@@ -1925,11 +1945,12 @@ del[data-operation-index] {
       }
     }
 
-    > .toggle-block-content {
-     flex-grow: 1;
-     overflow: auto;
+  > .toggle-block-content {
+      flex-grow: 1;
+      overflow: auto;
     }
   }
+}
 `;
 
 const EditorContainer = styled.div<Props>`
