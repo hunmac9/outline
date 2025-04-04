@@ -52,8 +52,11 @@ export default class PdfEmbed extends Node {
   };
 
   commands({ type }: { type: NodeType }) {
-    return (attrs: { attachmentId: string }): Command =>
-      (state, dispatch) => {
+    return {
+      createPdfEmbed: (attrs: { attachmentId: string }): Command => (
+        state,
+        dispatch
+      ) => {
         if (!attrs.attachmentId) {
           console.error("Cannot insert PdfEmbed without attachmentId");
           return false; // Don't insert if attachmentId is missing
@@ -62,7 +65,8 @@ export default class PdfEmbed extends Node {
           state.tr.replaceSelectionWith(type.create(attrs)).scrollIntoView()
         );
         return true;
-      };
+      },
+    };
   }
 
   // Define how this node is represented in Markdown.
