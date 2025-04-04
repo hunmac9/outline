@@ -273,6 +273,8 @@ function SuggestionsMenu<T extends MenuItem>(props: Props<T>) {
           return triggerFilePick("video/*");
         case "attachment":
           return triggerFilePick("*");
+        case "pdfEmbed": // Handle the new menu item
+          return triggerFilePick("application/pdf");
         case "embed":
           return triggerLinkInput(item);
         default:

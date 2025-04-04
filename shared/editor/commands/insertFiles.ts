@@ -76,6 +76,10 @@ const insertFiles = async function (
         dimensions: await getDimensions?.(file),
         isImage,
         isVideo,
+        isPdfEmbed:
+          file.type === "application/pdf" &&
+          !options.isAttachment &&
+          !!schema.nodes.pdfEmbed,
         file,
       };
     })
@@ -161,7 +165,33 @@ const insertFiles = async function (
               )
               .setMeta(uploadPlaceholderPlugin, { remove: { id: upload.id } })
           );
+        } else if (upload.isPdfEmbed) {
+          // Handle PDF Embed insertion
+          const result = findPlaceholder(view.state, upload.id);
+          if (result === null) {
+            return;
+          }
+
+          const [from, to] = result;
+
+          if (view.isDestroyed) {
+            return;
+          }
+
+          // Use the attachmentId (src) returned from the upload
+          view.dispatch(
+            view.state.tr
+              .replaceWith(
+                from,
+                to || from,
+                schema.nodes.pdfEmbed.create({
+                  attachmentId: src,
+                })
+              )
+              .setMeta(uploadPlaceholderPlugin, { remove: { id: upload.id } })
+          );
         } else {
+          // Handle regular attachments
           const result = findPlaceholder(view.state, upload.id);
           if (result === null) {
             return;

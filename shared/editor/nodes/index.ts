@@ -43,6 +43,7 @@ import TableHeader from "./TableHeader";
 import TableRow from "./TableRow";
 import Text from "./Text";
 import Video from "./Video";
+import PdfEmbed from "./PdfEmbed";
 
 type Nodes = (typeof Node | typeof Mark | typeof Extension)[];
 
@@ -98,6 +99,7 @@ export const richExtensions: Nodes = [
   CodeFence,
   Blockquote,
   Embed,
+  PdfEmbed,
   Attachment,
   Video,
   Notice,

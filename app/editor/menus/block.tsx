@@ -121,6 +121,12 @@ export default function blockMenuItems(
       keywords: "file upload attach",
     },
     {
+      name: "pdfEmbed", // Matches the node name
+      title: dictionary.embedPdf || "Embed PDF", // Add fallback text
+      icon: <AttachmentIcon />, // Reuse attachment icon for now
+      keywords: "pdf embed document inline",
+    },
+    {
       name: "table",
       title: dictionary.table,
       icon: <TableIcon />,
