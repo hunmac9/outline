@@ -1,5 +1,4 @@
-import * as Sentry from "@sentry/react";
-import { EditorView } from "prosemirror-view";
+import * as Sentry from "@sentry/react"; import { EditorView } from "prosemirror-view";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import type { Dictionary } from "~/hooks/useDictionary";
