@@ -1,10 +1,29 @@
 ARG APP_PATH=/opt/outline
-FROM outlinewiki/outline-base AS base
+
+# --- Builder Stage ---
+# Use the same base image as it likely contains necessary build tools/environment
+FROM outlinewiki/outline-base AS builder
 
 ARG APP_PATH
 WORKDIR $APP_PATH
 
-# ---
+# Copy dependency manifests
+# Copying these first leverages Docker cache if only source code changes
+COPY package.json yarn.lock* .sequelizerc ./
+
+# Install all dependencies (including devDependencies needed for build)
+# Using --frozen-lockfile ensures we use exact versions from yarn.lock
+RUN yarn install --frozen-lockfile
+
+# Copy the rest of the local source code
+COPY . .
+
+# Build the application using local source code
+# Ensure the build script is defined in package.json
+RUN yarn build
+
+# --- Runner Stage ---
+# Use a slim Node image for the final stage
 FROM node:20-slim AS runner
 
 LABEL org.opencontainers.image.source="https://github.com/outline/outline"
@@ -13,16 +32,21 @@ ARG APP_PATH
 WORKDIR $APP_PATH
 ENV NODE_ENV=production
 
-COPY --from=base $APP_PATH/build ./build
-COPY --from=base $APP_PATH/server ./server
-COPY --from=base $APP_PATH/public ./public
-COPY --from=base $APP_PATH/.sequelizerc ./.sequelizerc
-COPY --from=base $APP_PATH/node_modules ./node_modules
-COPY --from=base $APP_PATH/package.json ./package.json
+# Copy built artifacts and necessary files from the builder stage
+COPY --from=builder $APP_PATH/build ./build
+COPY --from=builder $APP_PATH/server ./server
+COPY --from=builder $APP_PATH/public ./public
+COPY --from=builder $APP_PATH/.sequelizerc ./.sequelizerc
+COPY --from=builder $APP_PATH/node_modules ./node_modules
+COPY --from=builder $APP_PATH/package.json ./package.json
+# yarn.lock might not be strictly necessary for runtime only, but good practice
+COPY --from=builder $APP_PATH/yarn.lock ./yarn.lock
+
+# --- Runtime Setup (largely unchanged) ---
 
 # Install wget to healthcheck the server
 RUN  apt-get update \
-  && apt-get install -y wget \
+  && apt-get install -y --no-install-recommends wget \
   && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user compatible with Debian and BusyBox based images
