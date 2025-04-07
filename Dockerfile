@@ -40,7 +40,8 @@ USER node
 RUN yarn install --frozen-lockfile
 
 # Build the application using local source code
-RUN yarn build
+# Redirect output to a log file and print the log if the build fails
+RUN yarn build > /opt/outline/build.log 2>&1 || (cat /opt/outline/build.log && exit 1)
 
 # --- Runner Stage ---
 # Use a slim Node image for the final stage
