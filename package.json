@@ -215,7 +215,7 @@
     "react-merge-refs": "^2.1.1",
     "react-pdf": "^7.7.1",
     "react-portal": "^4.2.2",
-    "react-router": "^7.5.0",
+    "react-router": "^5.3.4",
     "react-router-dom": "^5.3.4",
     "react-virtualized-auto-sizer": "^1.0.21",
     "react-waypoint": "^10.3.0",

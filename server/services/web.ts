@@ -61,7 +61,7 @@ export default function init(app: Koa = new Koa(), server?: Server) {
     if (env.FORCE_HTTPS) {
       app.use(
         enforceHttps({
-          resolver: (ctx) => {
+          resolver: (ctx: Koa.Context) => {
             if (httpsResolver(ctx)) {
               return true;
             }
@@ -84,7 +84,7 @@ export default function init(app: Koa = new Koa(), server?: Server) {
   // Monitor server connections
   if (server) {
     setInterval(() => {
-      server.getConnections((err, count) => {
+      server.getConnections((err: Error | null, count: number) => {
         if (err) {
           return;
         }
@@ -100,7 +100,7 @@ export default function init(app: Koa = new Koa(), server?: Server) {
   // Sets common security headers by default, such as no-sniff, hsts, hide powered
   // by etc, these are applied after auth and api so they are only returned on
   // standard non-XHR accessed routes
-  app.use((ctx, next) => {
+  app.use((ctx: Koa.Context, next: Koa.Next) => {
     ctx.state.cspNonce = crypto.randomBytes(16).toString("hex");
 
     return contentSecurityPolicy({
