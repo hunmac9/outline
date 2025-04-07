@@ -1,8 +1,9 @@
 ARG APP_PATH=/opt/outline
 
 # --- Builder Stage ---
-# Use the same base image as it likely contains necessary build tools/environment
-FROM outlinewiki/outline-base AS builder
+# Build the base image locally using Dockerfile.base
+# We name it outline-base:local to avoid conflicts and indicate it's local
+FROM outline-base:local AS builder
 
 # Install git
 USER root
@@ -11,6 +12,11 @@ USER node
 
 ARG APP_PATH
 WORKDIR $APP_PATH
+
+# Ensure the node user owns the directory before installing dependencies
+USER root
+RUN chown -R node:node $APP_PATH
+USER node
 
 # Install all dependencies (including devDependencies needed for build)
 # Using --frozen-lockfile ensures we use exact versions from the cloned yarn.lock
@@ -24,7 +30,7 @@ RUN yarn build
 # Use a slim Node image for the final stage
 FROM node:20-slim AS runner
 
-LABEL org.opencontainers.image.source="https://github.com/outline/outline"
+LABEL org.opencontainers.image.source="https://github.com/hunmac9/outline"
 
 ARG APP_PATH
 WORKDIR $APP_PATH

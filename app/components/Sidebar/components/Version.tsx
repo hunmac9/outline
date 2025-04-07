@@ -30,7 +30,7 @@ export default function Version() {
   return (
     <SidebarLink
       target="_blank"
-      href="https://github.com/outline/outline/releases"
+      href="https://github.com/hunmac9/outline/releases"
       label={
         <>
           v{currentVersion}

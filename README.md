@@ -22,7 +22,7 @@ If you'd like to run your own copy of Outline or contribute to development then 
 
 Please see the [documentation](https://docs.getoutline.com/s/hosting/) for running your own copy of Outline in a production configuration.
 
-If you have questions or improvements for the docs please create a thread in [GitHub discussions](https://github.com/outline/outline/discussions).
+If you have questions or improvements for the docs please create a thread in [GitHub discussions](https://github.com/hunmac9/outline/discussions).
 
 # Development
 
@@ -32,12 +32,12 @@ There is a short guide for [setting up a development environment](https://docs.g
 
 Outline is built and maintained by a small team – we'd love your help to fix bugs and add features!
 
-Before submitting a pull request _please_ discuss with the core team by creating or commenting in an issue on [GitHub](https://www.github.com/outline/outline/issues) – we'd also love to hear from you in the [discussions](https://www.github.com/outline/outline/discussions). This way we can ensure that an approach is agreed on before code is written. This will result in a much higher likelihood of your code being accepted.
+Before submitting a pull request _please_ discuss with the core team by creating or commenting in an issue on [GitHub](https://www.github.com/hunmac9/outline/issues) – we'd also love to hear from you in the [discussions](https://www.github.com/hunmac9/outline/discussions). This way we can ensure that an approach is agreed on before code is written. This will result in a much higher likelihood of your code being accepted.
 
 If you’re looking for ways to get started, here's a list of ways to help us improve Outline:
 
 - [Translation](docs/TRANSLATION.md) into other languages
-- Issues with [`good first issue`](https://github.com/outline/outline/labels/good%20first%20issue) label
+- Issues with [`good first issue`](https://github.com/hunmac9/outline/labels/good%20first%20issue) label
 - Performance improvements, both on server and frontend
 - Developer happiness and documentation
 - Bugs and other issues listed on GitHub

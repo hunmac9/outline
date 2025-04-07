@@ -42,7 +42,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/outline/outline.git"
+    "url": "git+https://github.com/hunmac9/outline.git"
   },
   "browserslist": [
     "> 0.25%, not dead"
