@@ -99,17 +99,17 @@ export const renderApp = async (
 
   const scriptTags = env.isProduction
     ? `<script type="module" nonce="${ctx.state.cspNonce}" src="${
-        env.CDN_URL || ""
-      }/static/${readManifestFile()[entry]["file"]}"></script>`
-    : `<script type="module" nonce="${ctx.state.cspNonce}">
-        import RefreshRuntime from "${viteHost}/static/@react-refresh"
+      env.CDN_URL || ""
+    }/static/${readManifestFile()[entry]["file"]}"></script>`
+  : `<script type="module" nonce="${ctx.state.cspNonce}">
+        import RefreshRuntime from "${viteHost}/@react-refresh" // Removed /static/
         RefreshRuntime.injectIntoGlobalHook(window)
         window.$RefreshReg$ = () => { }
         window.$RefreshSig$ = () => (type) => type
         window.__vite_plugin_react_preamble_installed__ = true
       </script>
-      <script type="module" nonce="${ctx.state.cspNonce}" src="${viteHost}/static/@vite/client"></script>
-      <script type="module" nonce="${ctx.state.cspNonce}" src="${viteHost}/static/${entry}"></script>
+      <script type="module" nonce="${ctx.state.cspNonce}" src="${viteHost}/@vite/client"></script> // Removed /static/
+      <script type="module" nonce="${ctx.state.cspNonce}" src="${viteHost}/${entry}"></script> // Removed /static/
     `;
 
   // Ensure no caching is performed

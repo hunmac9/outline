@@ -202,4 +202,4 @@ export default () => {
       },
     },
   });
-}; // Add missing closing brace for export default function
+}; // Ensuring the closing brace for export default function is present
