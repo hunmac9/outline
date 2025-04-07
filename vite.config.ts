@@ -148,6 +148,12 @@ export default () =>
       webpackStats(),
     ],
     optimizeDeps: {
+      exclude: [
+        "langium",
+        "vscode-jsonrpc",
+        "vscode-languageserver-types",
+        "@chevrotain/regexp-to-ast",
+      ],
       esbuildOptions: {
         keepNames: true,
         define: {
@@ -175,6 +181,12 @@ export default () =>
         keep_fnames: true,
       },
       rollupOptions: {
+        external: [
+          "langium",
+          "vscode-jsonrpc",
+          "vscode-languageserver-types",
+          "@chevrotain/regexp-to-ast",
+        ],
         input: {
           index: "./app/index.tsx",
         },
