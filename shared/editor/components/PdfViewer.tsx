@@ -74,7 +74,7 @@ const PdfViewer: React.FC<Props> = ({
   attachmentId,
   isSelected,
   isEditable,
-}) => {
+}: Props) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
