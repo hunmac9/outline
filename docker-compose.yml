@@ -1,10 +1,10 @@
 services:
   outline:
     build:
-      context: ./ # Build context is the repo sub-directory
+      context: ./
       dockerfile: Dockerfile # Use the Dockerfile inside ./outline
     env_file:
-      - .env # Load environment variables from ./outline/.env
+      - .env 
     ports:
       - "250:3000" # Map host port 250 to container port 3000
     volumes:
@@ -37,7 +37,7 @@ services:
   postgres:
     image: postgres:16-alpine
     env_file:
-      - ./outline/.env # Load DB credentials from ./outline/.env
+      - .env # Load DB credentials from .env in the same directory as docker-compose.yml
     expose:
       - "5432" # Only expose internally to the default network
     volumes:
