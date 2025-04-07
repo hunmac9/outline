@@ -24,7 +24,6 @@
     "skipLibCheck": true,
     "ignoreDeprecations": "5.0",
     "target": "es2020",
-    "types": ["vite/client", "node"], // Add vite/client and node types
     "paths": {
       "@server/*": ["./server/*"],
       "@shared/*": ["./shared/*"],

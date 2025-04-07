@@ -79,7 +79,10 @@ async function start(_id: number, disconnect: () => void) {
     app.use(logger((str) => Logger.info("http", str)));
   }
 
-  app.use(helmet());
+  // Disable HSTS in development to avoid browser caching issues across restarts
+  app.use(helmet({
+    hsts: env.isProduction,
+  }));
 
   // catch errors in one place, automatically set status and response headers
   onerror(app);
