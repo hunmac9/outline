@@ -4,7 +4,7 @@ services:
       context: ./outline # Build context is the repo sub-directory
       dockerfile: Dockerfile # Use the Dockerfile inside ./outline
     env_file:
-      - ./outline/.env # Load environment variables from ./outline/.env
+      - ./.env # Load environment variables from ./outline/.env
     ports:
       - "250:3000" # Map host port 250 to container port 3000
     volumes:
@@ -63,4 +63,3 @@ volumes:
 networks:
   hunternet:
     external: true # Use the pre-existing 'hunternet' network
-  # 'default' network is implicitly created by Docker Compose for these services
