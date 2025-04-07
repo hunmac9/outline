@@ -4,19 +4,21 @@ ARG APP_PATH=/opt/outline
 # Use the same base image as it likely contains necessary build tools/environment
 FROM outlinewiki/outline-base AS builder
 
+# Install git
+USER root
+RUN apt-get update && apt-get install -y git --no-install-recommends && rm -rf /var/lib/apt/lists/*
+USER node
+
 ARG APP_PATH
 WORKDIR $APP_PATH
 
-# Copy dependency manifests
-# Copying these first leverages Docker cache if only source code changes
-COPY package.json yarn.lock* .sequelizerc ./
+# Clone the specific repository fork instead of copying local files
+# Using --depth 1 for faster clone
+RUN git clone --depth 1 https://github.com/hunmac9/outline.git .
 
 # Install all dependencies (including devDependencies needed for build)
-# Using --frozen-lockfile ensures we use exact versions from yarn.lock
+# Using --frozen-lockfile ensures we use exact versions from the cloned yarn.lock
 RUN yarn install --frozen-lockfile
-
-# Copy the rest of the local source code
-COPY . .
 
 # Build the application using local source code
 # Ensure the build script is defined in package.json
