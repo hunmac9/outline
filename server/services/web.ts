@@ -150,3 +150,4 @@ export default function init(app: Koa = new Koa(), server?: Server) {
   app.use(mount(routes));
 
   return app;
+}
