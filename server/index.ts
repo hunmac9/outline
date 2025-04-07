@@ -61,7 +61,9 @@ async function start(_id: number, disconnect: () => void) {
 
   // Find if SSL certs are available
   const ssl = getSSLOptions();
-  const useHTTPS = !!ssl.key && !!ssl.cert;
+  // Force HTTP in development, otherwise check for certs
+  const useHTTPS = !env.isDevelopment && !!ssl.key && !!ssl.cert;
+  Logger.info("lifecycle", `Server HTTPS enabled: ${useHTTPS} (Development: ${env.isDevelopment})`);
 
   // If a --port flag is passed then it takes priority over the env variable
   const normalizedPort = getArg("port", "p") || env.PORT;

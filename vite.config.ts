@@ -25,11 +25,15 @@ if (environment.NODE_ENV === "development") {
   }
 }
 
-export default () =>
-  defineConfig({
+export default () => {
+  // Use root base path in development, CDN path in production
+  const basePath = environment.isDevelopment ? "/" : (environment.CDN_URL ?? "") + "/static/";
+  console.log(`[vite.config.ts] Using base path: ${basePath} (Development: ${environment.isDevelopment})`);
+
+  return defineConfig({
     root: "./",
     publicDir: "./server/static",
-    base: (environment.CDN_URL ?? "") + "/static/",
+    base: basePath,
     server: {
       port: 3001,
       host: true,
