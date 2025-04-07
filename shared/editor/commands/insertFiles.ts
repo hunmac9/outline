@@ -1,4 +1,6 @@
-import * as Sentry from "@sentry/react"; import { EditorView } from "prosemirror-view";
+import * as Sentry from "@sentry/react";
+import * as React from "react"; // Add missing React import
+import { EditorView } from "prosemirror-view";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import type { Dictionary } from "~/hooks/useDictionary";
@@ -177,14 +179,30 @@ const insertFiles = async function (
             return;
           }
 
-          // Use the attachmentId (src) returned from the upload
+          // Use the attachmentId returned from the upload, extracting it from the src URL
+          let attachmentId = src;
+          try {
+            // Assuming src is like /api/attachments.redirect?id=UUID
+            const url = new URL(src, window.location.origin); // Use a base URL for proper parsing
+            const id = url.searchParams.get("id");
+            if (!id) {
+              throw new Error("Could not extract attachment ID from URL");
+            }
+            attachmentId = id;
+          } catch (e) {
+            console.error("Failed to parse attachment ID from src:", src, e);
+            // Fallback or error handling needed? For now, maybe just use src and log error.
+            // Alternatively, fail the insertion. Let's fail for now.
+            throw new Error(`Invalid URL received for PDF attachment: ${src}`);
+          }
+
           view.dispatch(
             view.state.tr
               .replaceWith(
                 from,
                 to || from,
                 schema.nodes.pdfEmbed.create({
-                  attachmentId: src,
+                  attachmentId, // Use the extracted ID
                 })
               )
               .setMeta(uploadPlaceholderPlugin, { remove: { id: upload.id } })
