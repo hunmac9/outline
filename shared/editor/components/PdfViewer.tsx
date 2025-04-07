@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useState } from "react";
 import styled from "styled-components";
+import { s } from "../../styles";
 // Assuming react-pdf is installed in the target environment
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
@@ -140,6 +141,6 @@ const PdfViewer: React.FC<Props> = ({
 // This is a common pattern in Outline's codebase based on search results.
 // If it's not available globally, it needs to be imported from the correct location.
 // Example: import { s } from "@shared/styles";
-declare function s(key: string): any;
+// declare function s(key: string): any; // No longer needed after import
 
 export default PdfViewer;

@@ -2,7 +2,7 @@ ARG APP_PATH=/opt/outline
 
 # --- Base Stage ---
 # Pre-install dependencies based on yarn.lock
-FROM node:22-slim AS base
+FROM node:20-slim AS base
 ARG APP_PATH
 WORKDIR $APP_PATH
 COPY ./package.json ./yarn.lock ./
@@ -50,7 +50,7 @@ RUN NODE_OPTIONS="--max-old-space-size=4096" yarn build > /opt/outline/build.log
 
 # --- Runner Stage ---
 # Use a slim Node image for the final stage
-FROM node:22-slim AS runner
+FROM node:20-slim AS runner
 
 LABEL org.opencontainers.image.source="https://github.com/hunmac9/outline"
 
