@@ -7594,12 +7594,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:20.17.27, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0":
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0":
   version: 20.17.27
   resolution: "@types/node@npm:20.17.27"
   dependencies:
     undici-types: "npm:~6.19.2"
   checksum: 10c0/09f30c65e5f2a082eddf26a7ffa859bf2b77e1123829309823e7691227fd5a691b30cd3ac413d65829aa25c1eebd2f717bed80f2f8a7f83aaa6c2c3a047b3504
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^22.14.0":
+  version: 22.14.0
+  resolution: "@types/node@npm:22.14.0"
+  dependencies:
+    undici-types: "npm:~6.21.0"
+  checksum: 10c0/9d79f3fa1af9c2c869514f419c4a4905b34c10e12915582fd1784868ac4e74c6d306cf5eb47ef889b6750ab85a31be96618227b86739c4a3e0b1c15063f384c6
   languageName: node
   linkType: hard
 
@@ -17818,7 +17827,7 @@ __metadata:
     "@types/markdown-it-emoji": "npm:^2.0.4"
     "@types/mime-types": "npm:^2.1.4"
     "@types/natural-sort": "npm:^0.0.24"
-    "@types/node": "npm:20.17.27"
+    "@types/node": "npm:^22.14.0"
     "@types/node-fetch": "npm:^2.6.9"
     "@types/nodemailer": "npm:^6.4.17"
     "@types/passport-oauth2": "npm:^1.4.17"
@@ -22481,6 +22490,13 @@ __metadata:
   version: 6.19.8
   resolution: "undici-types@npm:6.19.8"
   checksum: 10c0/078afa5990fba110f6824823ace86073b4638f1d5112ee26e790155f481f2a868cc3e0615505b6f4282bdf74a3d8caad715fd809e870c2bb0704e3ea6082f344
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~6.21.0":
+  version: 6.21.0
+  resolution: "undici-types@npm:6.21.0"
+  checksum: 10c0/c01ed51829b10aa72fc3ce64b747f8e74ae9b60eafa19a7b46ef624403508a54c526ffab06a14a26b3120d055e1104d7abe7c9017e83ced038ea5cf52f8d5e04
   languageName: node
   linkType: hard
 
