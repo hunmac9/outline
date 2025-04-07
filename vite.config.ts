@@ -202,3 +202,4 @@ export default () => {
       },
     },
   });
+}; // Add missing closing brace for export default function
