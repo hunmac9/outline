@@ -27,19 +27,23 @@ WORKDIR $APP_PATH
 # Copy pre-installed node_modules from the base stage
 COPY --from=base $APP_PATH/node_modules ./node_modules
 
-# Copy the rest of the application code
-COPY . .
+# Copy package files and patches FIRST to leverage caching
+COPY ./package.json ./yarn.lock ./
+COPY ./patches ./patches
 
-# Ensure the node user owns the directory before installing/building
+# Ensure the node user owns the directory before installing
 USER root
 RUN chown -R node:node $APP_PATH
 USER node
 
-# Re-run yarn install to ensure all devDependencies are present and links are set up correctly
-# This might seem redundant but ensures the build environment is complete
+# Run install - This layer is cached if package files/patches don't change
+# Uses the node_modules copied from 'base' as a cache
 RUN yarn install --frozen-lockfile
 
-# Build the application using local source code
+# NOW copy the rest of the application code
+COPY . .
+
+# Build the application using local source code - This layer invalidates on code changes
 # Increase memory limit for Node.js during build
 # Redirect output to a log file and print the log if the build fails
 RUN NODE_OPTIONS="--max-old-space-size=4096" yarn build > /opt/outline/build.log 2>&1 || (cat /opt/outline/build.log && exit 1)
