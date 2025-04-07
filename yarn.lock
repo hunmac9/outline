@@ -17856,6 +17856,7 @@ __metadata:
     emoji-mart: "npm:^5.6.0"
     emoji-regex: "npm:^10.4.0"
     es6-error: "npm:^4.1.1"
+    escape-html: "npm:^1.0.3"
     eslint: "npm:^8.57.0"
     eslint-config-prettier: "npm:^8.10.0"
     eslint-import-resolver-typescript: "npm:^3.8.0"
