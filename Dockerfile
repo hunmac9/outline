@@ -1,11 +1,22 @@
 ARG APP_PATH=/opt/outline
 
-# --- Builder Stage ---
-# Build the base image locally using Dockerfile.base
-# We name it outline-base:local to avoid conflicts and indicate it's local
-FROM outline-base:local AS builder
+# --- Base Stage ---
+# Pre-install dependencies based on yarn.lock
+FROM node:20-slim AS base
+ARG APP_PATH
+WORKDIR $APP_PATH
+COPY ./package.json ./yarn.lock ./
+COPY ./patches ./patches
+# Install dependencies needed for runtime and potentially some build steps
+# Using --no-optional as in the original Dockerfile.base
+RUN yarn install --no-optional --frozen-lockfile --network-timeout 1000000 && \
+  yarn cache clean
 
-# Install git
+# --- Builder Stage ---
+# Use the base stage with pre-installed dependencies
+FROM base AS builder
+
+# Install git (needed for some build steps or versioning)
 USER root
 RUN apt-get update && apt-get install -y git --no-install-recommends && rm -rf /var/lib/apt/lists/*
 USER node
@@ -13,17 +24,22 @@ USER node
 ARG APP_PATH
 WORKDIR $APP_PATH
 
-# Ensure the node user owns the directory before installing dependencies
+# Copy pre-installed node_modules from the base stage
+COPY --from=base $APP_PATH/node_modules ./node_modules
+
+# Copy the rest of the application code
+COPY . .
+
+# Ensure the node user owns the directory before installing/building
 USER root
 RUN chown -R node:node $APP_PATH
 USER node
 
-# Install all dependencies (including devDependencies needed for build)
-# Using --frozen-lockfile ensures we use exact versions from the cloned yarn.lock
+# Re-run yarn install to ensure all devDependencies are present and links are set up correctly
+# This might seem redundant but ensures the build environment is complete
 RUN yarn install --frozen-lockfile
 
 # Build the application using local source code
-# Ensure the build script is defined in package.json
 RUN yarn build
 
 # --- Runner Stage ---
