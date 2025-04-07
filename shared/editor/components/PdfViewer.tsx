@@ -53,10 +53,16 @@ const StatusOverlay = styled.div`
   min-height: 100px;
 `;
 
-const LoadingIndicator = styled(LoadingIcon)`
-  width: 24px;
-  height: 24px;
-`;
+// Conditionally define LoadingIndicator only in the browser environment
+// to prevent server-side errors with styled-components and icon imports.
+const LoadingIndicator =
+  typeof window !== "undefined"
+    ? styled(LoadingIcon)`
+        width: 24px;
+        height: 24px;
+      `
+    : // Provide a simple div or null for the server environment
+      styled.div``; // Use an empty styled div as a placeholder on the server
 
 const ErrorMessage = styled.div`
   color: ${s("danger")};
@@ -111,7 +117,13 @@ const PdfViewer: React.FC<Props> = ({
           <ErrorMessage>{error}</ErrorMessage>
         </StatusOverlay>
       )}
-      {!isLoading && !error && (
+      {/* Render LoadingIndicator only if it's defined (browser) */}
+      {error && !isLoading && (
+        <StatusOverlay>
+          <ErrorMessage>{error}</ErrorMessage>
+        </StatusOverlay>
+      )}
+      {!isLoading && !error && LoadingIndicator && (
         <ViewerContainer>
           <Document
             file={pdfUrl}
