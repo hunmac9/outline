@@ -9,7 +9,7 @@
     "isolatedModules": true,
     "baseUrl": ".",
     "jsx": "react",
-    "lib": ["dom", "es2020", "dom.iterable", "esnext.asynciterable"],
+    "lib": ["dom", "es2020", "dom.iterable", "esnext.asynciterable"], // Reverted lib change
     "module": "esnext",
     "moduleResolution": "node",
     "noErrorTruncation": true,
@@ -24,11 +24,19 @@
     "skipLibCheck": true,
     "ignoreDeprecations": "5.0",
     "target": "es2020",
+    "types": ["node"], // Re-added explicit types array
     "paths": {
       "@server/*": ["./server/*"],
       "@shared/*": ["./shared/*"],
       "~/*": ["./app/*"]
     }
   },
+  "include": [ // Explicitly include config and source dirs
+    "vite.config.ts",
+    "app/**/*",
+    "server/**/*",
+    "shared/**/*",
+    "plugins/**/*"
+  ],
   "exclude": ["node_modules", "build", "server/migrations"]
 }

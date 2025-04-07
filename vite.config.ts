@@ -33,7 +33,7 @@ export default () =>
     server: {
       port: 3001,
       host: true,
-      https: httpsConfig, // Enable HTTPS for Vite dev server
+      // https: httpsConfig, // HTTPS disabled for local LAN access without cert issues
       allowedHosts: host ? [host] : undefined,
       cors: true,
       fs:
