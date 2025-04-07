@@ -22,7 +22,13 @@
         ]
       }
     ],
-    "tsconfig-paths-module-resolver"
+    "tsconfig-paths-module-resolver",
+    [
+      "transform-remove-imports",
+      {
+        "test": "\\.css$"
+      }
+    ]
   ],
   "env": {
     "production": {

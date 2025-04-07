@@ -3,13 +3,9 @@ import { useState } from "react";
 import styled from "styled-components";
 // Assuming react-pdf is installed in the target environment
 import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/esm/Page/AnnotationLayer.css";
+import "react-pdf/dist/esm/Page/TextLayer.css";
 import { LoadingIcon } from "outline-icons";
-
-// Conditionally import CSS only in the browser
-if (typeof window !== "undefined") {
-  import("react-pdf/dist/esm/Page/AnnotationLayer.css");
-  import("react-pdf/dist/esm/Page/TextLayer.css");
-}
 
 // Configure pdfjs worker source (adjust path if necessary based on build setup)
 // This is often needed for react-pdf to work correctly.
