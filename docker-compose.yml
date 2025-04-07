@@ -4,7 +4,7 @@ services:
       context: ./
       dockerfile: Dockerfile # Use the Dockerfile inside ./outline
     env_file:
-      - .env 
+      - .env
     ports:
       - "250:3000" # Map host port 250 to container port 3000
     volumes:
