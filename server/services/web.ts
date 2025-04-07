@@ -34,9 +34,13 @@ if (env.isCloudHosted) {
 }
 
 // Allow to load assets from Vite
+const viteHost = env.URL.replace(`:${env.PORT}`, ":3001"); // e.g., https://local.outline.dev:3001
 if (!env.isProduction) {
-  scriptSrc.push(env.URL.replace(`:${env.PORT}`, ":3001"));
+  scriptSrc.push(viteHost);
   scriptSrc.push("localhost:3001");
+  // Allow any host on port 3001 for LAN access during development
+  scriptSrc.push("https://*:3001");
+  scriptSrc.push("http://*:3001");
 }
 
 if (env.GOOGLE_ANALYTICS_ID) {
@@ -114,7 +118,18 @@ export default function init(app: Koa = new Koa(), server?: Server) {
         frameSrc: ["*", "data:"],
         // Do not use connect-src: because self + websockets does not work in
         // Safari, ref: https://bugs.webkit.org/show_bug.cgi?id=201591
-        connectSrc: ["*"],
+        // Explicitly allow connections to Vite HMR server from any host during development
+        connectSrc: env.isProduction
+          ? ["*"]
+          : [
+              "'self'",
+              viteHost, // e.g. https://local.outline.dev:3001
+              "localhost:3001",
+              "ws://localhost:3001", // Allow ws for localhost HMR
+              "wss://localhost:3001", // Allow wss for localhost HMR
+              "ws://*:3001", // Allow ws from any host for LAN HMR
+              "wss://*:3001", // Allow wss from any host for LAN HMR
+            ],
       },
     })(ctx, next);
   });
@@ -135,4 +150,3 @@ export default function init(app: Koa = new Koa(), server?: Server) {
   app.use(mount(routes));
 
   return app;
-}
