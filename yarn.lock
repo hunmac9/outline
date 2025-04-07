@@ -7223,6 +7223,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/history@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "@types/history@npm:5.0.0"
+  dependencies:
+    history: "npm:*"
+  checksum: 10c0/bce6d8da5217349dec97dfc4d9b65be03166351b86cb3e8764ed92b8b98eced1fc7ecb5bb17f1d7da894d065ffa3a12a8106444c174450a6d596241deef3f0a5
+  languageName: node
+  linkType: hard
+
 "@types/hoist-non-react-statics@npm:*":
   version: 3.3.1
   resolution: "@types/hoist-non-react-statics@npm:3.3.1"
@@ -7233,7 +7242,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/hoist-non-react-statics@npm:^3":
+"@types/hoist-non-react-statics@npm:^3.3.6":
   version: 3.3.6
   resolution: "@types/hoist-non-react-statics@npm:3.3.6"
   dependencies:
@@ -7778,6 +7787,16 @@ __metadata:
     "@types/history": "npm:*"
     "@types/react": "npm:*"
   checksum: 10c0/061285f4eacbafb75828e01447b634ac6db87ea7ca7c5bc591640ea700be0c7360b1365399726944d084abe8e6ae4ea14e5f01121a77371a06de5b49e1ee1f71
+  languageName: node
+  linkType: hard
+
+"@types/react-router@npm:^5.1.20":
+  version: 5.1.20
+  resolution: "@types/react-router@npm:5.1.20"
+  dependencies:
+    "@types/history": "npm:^4.7.11"
+    "@types/react": "npm:*"
+  checksum: 10c0/1f7eee61981d2f807fa01a34a0ef98ebc0774023832b6611a69c7f28fdff01de5a38cabf399f32e376bf8099dcb7afaf724775bea9d38870224492bea4cb5737
   languageName: node
   linkType: hard
 
@@ -13648,6 +13667,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"history@npm:*, history@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "history@npm:5.3.0"
+  dependencies:
+    "@babel/runtime": "npm:^7.7.6"
+  checksum: 10c0/812ec839386222d6437bd78d9f05db32e47d105ada0ad8834b32626919dd2fee7a10001bc489510f93a8069d02f118214bd8d42a82f7cf9daf8e84fbcbbb2016
+  languageName: node
+  linkType: hard
+
 "history@npm:^4.9.0":
   version: 4.10.1
   resolution: "history@npm:4.10.1"
@@ -13659,15 +13687,6 @@ __metadata:
     tiny-warning: "npm:^1.0.0"
     value-equal: "npm:^1.0.1"
   checksum: 10c0/35377694e4f10f2cf056a9cb1a8ee083e04e4b4717a63baeee4afd565658a62c7e73700bf9e82aa53dbe1ec94e0a25a83c080d63bad8ee6b274a98d2fbc5ed4c
-  languageName: node
-  linkType: hard
-
-"history@npm:^5.3.0":
-  version: 5.3.0
-  resolution: "history@npm:5.3.0"
-  dependencies:
-    "@babel/runtime": "npm:^7.7.6"
-  checksum: 10c0/812ec839386222d6437bd78d9f05db32e47d105ada0ad8834b32626919dd2fee7a10001bc489510f93a8069d02f118214bd8d42a82f7cf9daf8e84fbcbbb2016
   languageName: node
   linkType: hard
 
@@ -17744,7 +17763,8 @@ __metadata:
     "@types/fuzzy-search": "npm:^2.1.5"
     "@types/glob": "npm:^8.0.1"
     "@types/google.analytics": "npm:^0.0.46"
-    "@types/hoist-non-react-statics": "npm:^3"
+    "@types/history": "npm:^5.0.0"
+    "@types/hoist-non-react-statics": "npm:^3.3.6"
     "@types/invariant": "npm:^2.2.37"
     "@types/jest": "npm:^29.5.14"
     "@types/jsonwebtoken": "npm:^8.5.9"
@@ -17780,6 +17800,7 @@ __metadata:
     "@types/react-is": "npm:^19"
     "@types/react-pdf": "npm:^7.0.0"
     "@types/react-portal": "npm:^4.0.7"
+    "@types/react-router": "npm:^5.1.20"
     "@types/react-router-dom": "npm:^5.3.3"
     "@types/react-virtualized-auto-sizer": "npm:^1.0.4"
     "@types/react-window": "npm:^1.8.8"
