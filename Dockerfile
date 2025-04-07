@@ -12,10 +12,6 @@ USER node
 ARG APP_PATH
 WORKDIR $APP_PATH
 
-# Clone the specific repository fork instead of copying local files
-# Using --depth 1 for faster clone
-RUN git clone --depth 1 https://github.com/hunmac9/outline.git .
-
 # Install all dependencies (including devDependencies needed for build)
 # Using --frozen-lockfile ensures we use exact versions from the cloned yarn.lock
 RUN yarn install --frozen-lockfile
