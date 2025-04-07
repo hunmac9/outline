@@ -31,17 +31,17 @@ COPY --from=base $APP_PATH/node_modules ./node_modules
 COPY ./package.json ./yarn.lock ./
 COPY ./patches ./patches
 
-# Ensure the node user owns the directory before installing
-USER root
-RUN chown -R node:node $APP_PATH
-USER node
-
 # Run install - This layer is cached if package files/patches don't change
 # Uses the node_modules copied from 'base' as a cache
 RUN yarn install --frozen-lockfile
 
 # NOW copy the rest of the application code
 COPY . .
+
+# Ensure the node user owns the directory before building
+USER root
+RUN chown -R node:node $APP_PATH
+USER node
 
 # Build the application using local source code - This layer invalidates on code changes
 # Increase memory limit for Node.js during build
