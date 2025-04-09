@@ -1,8 +1,12 @@
 import { AttachmentIcon } from "outline-icons";
 import * as React from "react";
+import { Document, Page, pdfjs } from "react-pdf";
 import styled from "styled-components";
 import { ComponentProps } from "../types";
 import Widget from "./Widget";
+
+// Configure pdfjs worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 const PdfContainer = styled.div`
   border: 1px solid ${(props) => props.theme.divider};
@@ -170,36 +174,44 @@ export default class PdfEmbedComponent extends React.Component<
           title={title || "PDF Document"}
           isSelected={isSelected}
           theme={theme}
-          href={!isEditable ? memoizedFileUrl : undefined} // Use memoized URL
+          href={!isEditable ? memoizedFileUrl : undefined}
           onMouseDown={onSelect}
           onClick={(event) => {
             if (isEditable) {
               event.preventDefault();
-              // Removed event.stopPropagation() to allow selection events to bubble up
             }
           }}
         />
-        {/* Iframe Container */}
         <div
           className="pdf-content-area"
           style={{
             marginTop: "8px",
             flexGrow: 1,
-            height: `${containerHeight}px`, // Apply dynamic height from state
-            position: "relative", // Needed for resize handle positioning
-            overflow: "hidden", // Hide potential iframe scrollbars if container handles it
+            height: `${containerHeight}px`,
+            position: "relative",
+            overflow: "auto",
           }}
         >
-          <iframe
-            src={memoizedFileUrl}
-            width="100%"
-            height="100%"
-            style={{ border: "none" }} // Remove default iframe border
-            title={title || "PDF Document"}
-            // Consider adding sandbox attributes for security if PDFs are from untrusted sources
-            // sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-          {/* Resize Handle */}
+          {memoizedFileUrl ? (
+            <Document
+              file={memoizedFileUrl}
+              loading={
+                <LoadingMessage theme={theme}>Loading PDF…</LoadingMessage>
+              }
+              error={
+                <LoadingMessage theme={theme}>
+                  Failed to load PDF
+                </LoadingMessage>
+              }
+            >
+              <Page
+                pageNumber={1}
+                width={this.containerRef.current?.clientWidth || undefined}
+              />
+            </Document>
+          ) : (
+            <LoadingMessage theme={theme}>No PDF file</LoadingMessage>
+          )}
           {isEditable && (
             <div className="resize-handle" onMouseDown={this.handleResize} />
           )}
