@@ -180,14 +180,14 @@ function DocumentEditor(props: Props, ref: React.RefObject<any>) {
   const EditorComponent = multiplayer ? MultiplayerEditor : Editor;
 
   const childOffsetHeight = childRef.current?.offsetHeight || 0;
-  const editorStyle = React.useMemo(
-    () => ({
-      padding: "0 32px",
-      margin: "0 -32px",
+  const editorStyle = React.useMemo(() => {
+    const isFullWidthMobile = ui.mobileDocumentFullWidth;
+    return {
+      padding: isFullWidthMobile ? "0 16px" : "0 32px",
+      margin: isFullWidthMobile ? "0" : "0 -32px",
       paddingBottom: `calc(50vh - ${childOffsetHeight}px)`,
-    }),
-    [childOffsetHeight]
-  );
+    };
+  }, [childOffsetHeight, ui.mobileDocumentFullWidth]);
 
   const handleInit = React.useCallback(
     () => setEditorInitialized(true),
