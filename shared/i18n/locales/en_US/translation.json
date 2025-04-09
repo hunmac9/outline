@@ -207,6 +207,8 @@
   "Couldn’t copy the document, try again?": "Couldn’t copy the document, try again?",
   "Include nested documents": "Include nested documents",
   "Copy to <em>{{ location }}</em>": "Copy to <em>{{ location }}</em>",
+  "Import started successfully": "Import started successfully",
+  "Import Markdown Folder": "Import Markdown Folder",
   "Search collections & documents": "Search collections & documents",
   "No results found": "No results found",
   "New": "New",

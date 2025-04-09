@@ -12,11 +12,13 @@ import { useTranslation } from "react-i18next";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList as List } from "react-window";
 import scrollIntoView from "scroll-into-view-if-needed";
+import { toast } from "sonner";
 import styled, { useTheme } from "styled-components";
 import breakpoint from "styled-components-breakpoint";
 import Icon from "@shared/components/Icon";
 import { NavigationNode, NavigationNodeType } from "@shared/types";
 import { isModKey } from "@shared/utils/keyboard";
+import Button from "~/components/Button";
 import DocumentExplorerNode from "~/components/DocumentExplorerNode";
 import DocumentExplorerSearchResult from "~/components/DocumentExplorerSearchResult";
 import Flex from "~/components/Flex";
@@ -397,6 +399,36 @@ function DocumentExplorer({ onSubmit, onSelect, items, defaultValue }: Props) {
 
   return (
     <Container tabIndex={-1} onKeyDown={handleKeyDown}>
+      <Flex style={{ padding: "0 24px 8px 24px" }} gap={8}>
+        <Button
+          onClick={() => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.multiple = true;
+            input.webkitdirectory = true;
+            input.style.display = "none";
+            input.onchange = async (e) => {
+              const files = (e.target as HTMLInputElement).files;
+              if (!files) {
+                return;
+              }
+              try {
+                await documents.importMarkdownWithAssets(files, null, null, {
+                  publish: true,
+                });
+                toast.success(t("Import started successfully"));
+              } catch (err) {
+                toast.error(err.message);
+              }
+            };
+            document.body.appendChild(input);
+            input.click();
+            input.remove();
+          }}
+        >
+          {t("Import Markdown Folder")}
+        </Button>
+      </Flex>
       <ListSearch
         ref={inputSearchRef}
         onChange={handleSearch}
