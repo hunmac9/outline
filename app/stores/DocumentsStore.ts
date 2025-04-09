@@ -5,6 +5,7 @@ import find from "lodash/find";
 import omitBy from "lodash/omitBy";
 import orderBy from "lodash/orderBy";
 import { observable, action, computed, runInAction } from "mobx";
+import { AttachmentPreset } from "@shared/types";
 import {
   SubscriptionType,
   type DateFilter,
@@ -634,6 +635,62 @@ export default class DocumentsStore extends Store<Document> {
 
     this.addPolicies(res.policies);
     return res.data.documents.map(this.add);
+  };
+
+  @action
+  importMarkdownWithAssets = async (
+    files: FileList | File[],
+    parentDocumentId: string | null | undefined,
+    collectionId: string | null | undefined,
+    options: ImportOptions
+  ) => {
+    const fileArray = Array.from(files);
+
+    // Separate markdown files and images
+    const markdownFiles = fileArray.filter((file) =>
+      file.name.toLowerCase().endsWith(".md")
+    );
+    const imageFiles = fileArray.filter(
+      (file) =>
+        file.type.startsWith("image/") ||
+        /\.(png|jpe?g|gif|svg|webp)$/i.test(file.name)
+    );
+
+    // Upload images and map original filenames to URLs
+    const imageUrlMap: Record<string, string> = {};
+    for (const imageFile of imageFiles) {
+      const url = await (
+        await import("~/utils/files")
+      ).uploadFile(imageFile, {
+        preset: AttachmentPreset.Import,
+      });
+      imageUrlMap[imageFile.name] = url.url || url; // handle different return types
+    }
+
+    // Process each markdown file
+    for (const mdFile of markdownFiles) {
+      const text = await mdFile.text();
+
+      // Replace relative image paths with uploaded URLs
+      const updatedText = text.replace(
+        /(!\[[^\]]*\]\()([^)\s]+)(\))/g,
+        (match, p1, p2, p3) => {
+          const filename = p2.split("/").pop() || p2;
+          if (imageUrlMap[filename]) {
+            return `${p1}${imageUrlMap[filename]}${p3}`;
+          }
+          return match;
+        }
+      );
+
+      // Create a new File with updated content
+      const updatedMdFile = new File([updatedText], mdFile.name, {
+        type: mdFile.type,
+      });
+
+      // Import the updated markdown file using existing import method
+      await this.import(updatedMdFile, parentDocumentId, collectionId, options);
+    }
   };
 
   @action
