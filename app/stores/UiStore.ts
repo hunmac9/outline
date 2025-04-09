@@ -32,6 +32,7 @@ type PersistedData = Pick<
   | "sidebarRightWidth"
   | "sidebarCollapsed"
   | "tocVisible"
+  | "mobileDocumentFullWidth"
 >;
 
 class UiStore {
@@ -77,6 +78,10 @@ class UiStore {
   @observable
   commentsExpanded = false;
 
+  // whether the document should span the full width on mobile devices
+  @observable
+  mobileDocumentFullWidth = false;
+
   @observable
   sidebarIsResizing = false;
 
@@ -101,6 +106,7 @@ class UiStore {
     this.tocVisible = data.tocVisible;
     this.commentsExpanded = !!data.commentsExpanded;
     this.theme = data.theme || Theme.System;
+    this.mobileDocumentFullWidth = !!data.mobileDocumentFullWidth;
 
     // system theme listeners
     if (window.matchMedia) {
@@ -285,11 +291,17 @@ class UiStore {
       languagePromptDismissed: this.languagePromptDismissed,
       commentsExpanded: this.commentsExpanded,
       theme: this.theme,
+      mobileDocumentFullWidth: this.mobileDocumentFullWidth,
     };
   }
 
   private persist = () => {
     Storage.set(UI_STORE, this.asJson);
+  };
+
+  @action
+  setMobileDocumentFullWidth = (value: boolean) => {
+    this.set({ mobileDocumentFullWidth: value });
   };
 }
 

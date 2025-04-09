@@ -435,6 +435,7 @@ class DocumentScene extends React.Component<Props> {
     } = this.props;
     const { team, user } = auth;
     const isShare = !!shareId;
+    const mobileDocumentFullWidth = ui.mobileDocumentFullWidth;
     const embedsDisabled =
       (team && team.documentEmbeds === false) || document.embedsDisabled;
 
@@ -526,6 +527,7 @@ class DocumentScene extends React.Component<Props> {
                 fallback={
                   <EditorContainer
                     docFullWidth={document.fullWidth}
+                    mobileDocFullWidth={mobileDocumentFullWidth}
                     showContents={showContents}
                     tocPosition={tocPos}
                   >
@@ -534,7 +536,10 @@ class DocumentScene extends React.Component<Props> {
                 }
               >
                 {revision ? (
-                  <RevisionContainer docFullWidth={document.fullWidth}>
+                  <RevisionContainer
+                    docFullWidth={document.fullWidth}
+                    mobileDocFullWidth={mobileDocumentFullWidth}
+                  >
                     <RevisionViewer
                       document={document}
                       revision={revision}
@@ -547,6 +552,7 @@ class DocumentScene extends React.Component<Props> {
                       name="document"
                       as={EditorContainer}
                       docFullWidth={document.fullWidth}
+                      mobileDocFullWidth={mobileDocumentFullWidth}
                       showContents={showContents}
                       tocPosition={tocPos}
                     >
@@ -688,13 +694,14 @@ const PrintContentsContainer = styled.div`
 
 type EditorContainerProps = {
   docFullWidth: boolean;
+  mobileDocFullWidth: boolean;
   showContents: boolean;
   tocPosition: TOCPosition | false;
 };
 
 const EditorContainer = styled.div<EditorContainerProps>`
   // Adds space to the gutter to make room for icon & heading annotations
-  padding: 0 44px;
+  padding: ${(props) => (props.mobileDocFullWidth ? "0" : "0 44px")};
 
   ${breakpoint("tablet")`
     grid-row: 1;
@@ -717,11 +724,12 @@ const EditorContainer = styled.div<EditorContainerProps>`
 
 type RevisionContainerProps = {
   docFullWidth: boolean;
+  mobileDocFullWidth: boolean;
 };
 
 const RevisionContainer = styled.div<RevisionContainerProps>`
   // Adds space to the gutter to make room for icon
-  padding: 0 40px;
+  padding: ${(props) => (props.mobileDocFullWidth ? "0" : "0 40px")};
 
   ${breakpoint("tablet")`
     grid-row: 1;

@@ -76,6 +76,14 @@ function Preferences() {
     [t, ui]
   );
 
+  const handleMobileFullWidthChange = React.useCallback(
+    (ev: React.ChangeEvent<HTMLInputElement>) => {
+      ui.setMobileDocumentFullWidth(ev.target.checked);
+      toast.success(t("Preferences saved"));
+    },
+    [t, ui]
+  );
+
   const showDeleteAccount = () => {
     dialogs.openModal({
       title: t("Delete account"),
@@ -118,6 +126,20 @@ function Preferences() {
           ariaLabel={t("Language")}
           label={t("Language")}
           hideLabel
+        />
+      </SettingRow>
+      <SettingRow
+        name="mobileDocumentFullWidth"
+        label={t("Full width on mobile")}
+        description={t(
+          "Display documents using the full screen width on mobile devices."
+        )}
+      >
+        <Switch
+          id="mobileDocumentFullWidth"
+          name="mobileDocumentFullWidth"
+          checked={ui.mobileDocumentFullWidth}
+          onChange={handleMobileFullWidthChange}
         />
       </SettingRow>
       <SettingRow
