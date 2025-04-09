@@ -71,8 +71,6 @@ function CollectionMenu({
   const { t } = useTranslation();
   const history = useHistory();
   const file = React.useRef<HTMLInputElement>(null);
-  const [folderInputEl, setFolderInputEl] =
-    React.useState<HTMLInputElement | null>(null);
 
   const {
     loading: subscriptionLoading,
@@ -174,14 +172,30 @@ function CollectionMenu({
     [collection.id, documents, t]
   );
 
-  const handleImportFolder = React.useCallback((ev: React.SyntheticEvent) => {
-    ev.preventDefault();
-    ev.stopPropagation();
+  const handleImportFolder = React.useCallback(
+    (ev: React.SyntheticEvent) => {
+      ev.preventDefault();
+      ev.stopPropagation();
 
-    if (folderInputEl) {
-      folderInputEl.click();
-    }
-  }, []);
+      // Dynamically create input, trigger click, and remove
+      const input = document.createElement("input");
+      input.type = "file";
+      input.style.display = "none";
+      input.multiple = true;
+      input.setAttribute("webkitdirectory", ""); // Use setAttribute for non-standard prop
+
+      input.onchange = (e) => {
+        void handleFolderPicked(
+          e as unknown as React.ChangeEvent<HTMLInputElement>
+        );
+        document.body.removeChild(input); // Clean up
+      };
+
+      document.body.appendChild(input);
+      input.click();
+    },
+    [handleFolderPicked] // Ensure handleFolderPicked is stable or included if needed
+  );
 
   const handleChangeSort = React.useCallback(
     (field: string, direction = "asc") => {
@@ -329,22 +343,6 @@ function CollectionMenu({
             onChange={handleFilePicked}
             onClick={stopPropagation}
             accept={documents.importFileTypes.join(", ")}
-            tabIndex={-1}
-          />
-        </label>
-        <label>
-          {t("Import Markdown Folder")}
-          <input
-            type="file"
-            ref={(el) => {
-              setFolderInputEl(el);
-              if (el) {
-                el.setAttribute("webkitdirectory", "");
-              }
-            }}
-            onChange={handleFolderPicked}
-            onClick={stopPropagation}
-            multiple
             tabIndex={-1}
           />
         </label>
