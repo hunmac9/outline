@@ -701,7 +701,7 @@ type EditorContainerProps = {
 
 const EditorContainer = styled.div<EditorContainerProps>`
   // Adds space to the gutter to make room for icon & heading annotations
-  padding: ${(props) => (props.mobileDocFullWidth ? "0" : "0 44px")};
+  padding: ${(props) => (props.mobileDocFullWidth ? "0 16px" : "0 44px")};
 
   ${breakpoint("tablet")`
     grid-row: 1;
@@ -729,7 +729,7 @@ type RevisionContainerProps = {
 
 const RevisionContainer = styled.div<RevisionContainerProps>`
   // Adds space to the gutter to make room for icon
-  padding: ${(props) => (props.mobileDocFullWidth ? "0" : "0 40px")};
+  padding: ${(props) => (props.mobileDocFullWidth ? "0 16px" : "0 40px")};
 
   ${breakpoint("tablet")`
     grid-row: 1;
