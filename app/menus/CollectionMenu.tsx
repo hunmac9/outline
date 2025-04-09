@@ -71,7 +71,8 @@ function CollectionMenu({
   const { t } = useTranslation();
   const history = useHistory();
   const file = React.useRef<HTMLInputElement>(null);
-  const folderInput = React.useRef<HTMLInputElement>(null);
+  const [folderInputEl, setFolderInputEl] =
+    React.useState<HTMLInputElement | null>(null);
 
   const {
     loading: subscriptionLoading,
@@ -177,8 +178,8 @@ function CollectionMenu({
     ev.preventDefault();
     ev.stopPropagation();
 
-    if (folderInput.current) {
-      folderInput.current.click();
+    if (folderInputEl) {
+      folderInputEl.click();
     }
   }, []);
 
@@ -336,6 +337,7 @@ function CollectionMenu({
           <input
             type="file"
             ref={(el) => {
+              setFolderInputEl(el);
               if (el) {
                 el.setAttribute("webkitdirectory", "");
               }
