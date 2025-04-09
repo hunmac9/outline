@@ -71,6 +71,7 @@ function CollectionMenu({
   const { t } = useTranslation();
   const history = useHistory();
   const file = React.useRef<HTMLInputElement>(null);
+  const folderInput = React.useRef<HTMLInputElement>(null);
 
   const {
     loading: subscriptionLoading,
@@ -151,6 +152,36 @@ function CollectionMenu({
     [history, collection.id, documents]
   );
 
+  const handleFolderPicked = React.useCallback(
+    async (ev: React.ChangeEvent<HTMLInputElement>) => {
+      const files = ev.target.files;
+      if (!files || files.length === 0) {
+        return;
+      }
+
+      try {
+        await documents.importMarkdownWithAssets(files, null, collection.id, {
+          publish: true,
+        });
+        toast.success(t("Import started successfully"));
+      } catch (err) {
+        toast.error(err.message);
+      } finally {
+        ev.target.value = "";
+      }
+    },
+    [collection.id, documents, t]
+  );
+
+  const handleImportFolder = React.useCallback((ev: React.SyntheticEvent) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+
+    if (folderInput.current) {
+      folderInput.current.click();
+    }
+  }, []);
+
   const handleChangeSort = React.useCallback(
     (field: string, direction = "asc") => {
       menu.hide();
@@ -195,6 +226,13 @@ function CollectionMenu({
         title: t("Import document"),
         visible: can.createDocument,
         onClick: handleImportDocument,
+        icon: <ImportIcon />,
+      },
+      {
+        type: "button",
+        title: t("Import Markdown Folder"),
+        visible: can.createDocument,
+        onClick: handleImportFolder,
         icon: <ImportIcon />,
       },
       {
@@ -290,6 +328,21 @@ function CollectionMenu({
             onChange={handleFilePicked}
             onClick={stopPropagation}
             accept={documents.importFileTypes.join(", ")}
+            tabIndex={-1}
+          />
+        </label>
+        <label>
+          {t("Import Markdown Folder")}
+          <input
+            type="file"
+            ref={(el) => {
+              if (el) {
+                el.setAttribute("webkitdirectory", "");
+              }
+            }}
+            onChange={handleFolderPicked}
+            onClick={stopPropagation}
+            multiple
             tabIndex={-1}
           />
         </label>
