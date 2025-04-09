@@ -183,7 +183,7 @@ function DocumentEditor(props: Props, ref: React.RefObject<any>) {
   const editorStyle = React.useMemo(() => {
     const isFullWidthMobile = ui.mobileDocumentFullWidth;
     return {
-      padding: isFullWidthMobile ? "0 16px" : "0 32px",
+      padding: isFullWidthMobile ? "0 8px" : "0 32px",
       margin: isFullWidthMobile ? "0" : "0 -32px",
       paddingBottom: `calc(50vh - ${childOffsetHeight}px)`,
     };
