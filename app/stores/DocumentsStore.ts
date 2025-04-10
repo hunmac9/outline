@@ -694,6 +694,23 @@ export default class DocumentsStore extends Store<Document> {
   };
 
   @action
+  importMultipleMarkdownFolders = async (
+    folders: (FileList | File[])[],
+    parentDocumentId: string | null | undefined,
+    collectionId: string | null | undefined,
+    options: ImportOptions
+  ) => {
+    for (const folderFiles of folders) {
+      await this.importMarkdownWithAssets(
+        folderFiles,
+        parentDocumentId,
+        collectionId,
+        options
+      );
+    }
+  };
+
+  @action
   import = async (
     file: File,
     parentDocumentId: string | null | undefined,

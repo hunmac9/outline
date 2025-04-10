@@ -159,9 +159,15 @@ function CollectionMenu({
       }
 
       try {
-        await documents.importMarkdownWithAssets(files, null, collection.id, {
-          publish: true,
-        });
+        // Wrap single folder FileList in an array for multi-folder support
+        await documents.importMultipleMarkdownFolders(
+          [files],
+          null,
+          collection.id,
+          {
+            publish: true,
+          }
+        );
         toast.success(t("Import started successfully"));
       } catch (err) {
         toast.error(err.message);
