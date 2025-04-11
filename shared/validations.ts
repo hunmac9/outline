@@ -48,7 +48,7 @@ export const DocumentValidation = {
   maxSummaryLength: 1000,
 
   /** The maximum size of the collaborative document state */
-  maxStateLength: 1500 * 1024,
+  maxStateLength: 10 * 1024 * 1024, // 10 MB
 };
 
 export const ImportValidation = {
