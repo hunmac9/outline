@@ -7,7 +7,7 @@ RUN yarn install --frozen-lockfile --production=false
 
 COPY . .
 
-RUN yarn build
+RUN NODE_OPTIONS=--max-old-space-size=4096 yarn build
 
 
 FROM node:20-slim AS runner
