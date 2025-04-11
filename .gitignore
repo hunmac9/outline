@@ -1,5 +1,9 @@
 dist
 build
+storage-data/
+database-data/
+https-portal-data/
+redis.conf/
 node_modules/*
 docker.env
 .env
