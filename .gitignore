@@ -1,6 +1,7 @@
 dist
 build
 node_modules/*
+docker.env
 .env
 .env.local
 .env.new

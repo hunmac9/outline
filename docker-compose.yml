@@ -1,19 +1,38 @@
 services:
   redis:
     image: redis
-    ports:
-      - "127.0.0.1:6379:6379"
-    user: "redis:redis"
+    env_file: ./docker.env
+    expose:
+      - "6379"
+    volumes:
+      - ./redis.conf:/redis.conf
+    command: ["redis-server", "/redis.conf"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 30s
+      retries: 3
+    networks:
+      - default
 
   postgres:
     image: postgres
-    ports:
-      - "127.0.0.1:5432:5432"
+    env_file: ./docker.env
+    expose:
+      - "5432"
+    volumes:
+      - ./database-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "outline", "-U", "user"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: outline
-    user: "postgres:postgres"
+      POSTGRES_USER: 'user'
+      POSTGRES_PASSWORD: 'pass'
+      POSTGRES_DB: 'outline'
+    networks:
+      - default
 
   outline:
     build:        # This uses your Dockerfile in the current dir
@@ -31,3 +50,10 @@ services:
     volumes:
       - ./storage-data:/var/lib/outline/data
     restart: unless-stopped
+    networks:
+      - hunternet
+
+networks:
+  default:
+  hunternet:
+    external: true
