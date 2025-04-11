@@ -51,7 +51,6 @@ services:
       - ./storage-data:/var/lib/outline/data
     restart: unless-stopped
     networks:
-      - default
       - hunternet
 
 networks:
