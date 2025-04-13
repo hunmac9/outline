@@ -90,6 +90,13 @@ function ExportDialog({ collection, onSubmit }: Props) {
       ),
       value: FileOperationFormat.JSON,
     },
+    {
+      title: "PDF", // Add translation key later
+      description: t(
+        "A ZIP file containing the documents as PDF files, formatted for printing." // Add translation key later
+      ),
+      value: FileOperationFormat.PDF,
+    },
   ];
 
   return (

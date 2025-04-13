@@ -3,12 +3,18 @@ import compact from "lodash/compact";
 import flatten from "lodash/flatten";
 import isEqual from "lodash/isEqual";
 import uniq from "lodash/uniq";
+import katex from "katex";
+import hljs from "highlight.js";
 import { Node, DOMSerializer, Fragment } from "prosemirror-model";
 import * as React from "react";
 import { renderToString } from "react-dom/server";
 import styled, { ServerStyleSheet, ThemeProvider } from "styled-components";
 import { prosemirrorToYDoc } from "y-prosemirror";
 import * as Y from "yjs";
+// Import CSS as strings for injection - adjust paths if necessary
+// Assuming CSS files are available relative to this file or configured via build tool
+// import katexCss from 'katex/dist/katex.min.css';
+// import hljsCss from 'highlight.js/styles/default.css'; // Choose a theme
 import EditorContainer from "@shared/editor/components/Styles";
 import GlobalStyles from "@shared/styles/globals";
 import light from "@shared/styles/theme";
@@ -35,6 +41,9 @@ export type HTMLOptions = {
   /** The base URL to use for relative links */
   baseUrl?: string;
 };
+
+// Define options specific to PDF HTML generation if needed
+export type PdfHtmlOptions = HTMLOptions;
 
 export type MentionAttrs = {
   type: MentionType;
@@ -495,14 +504,18 @@ export class ProsemirrorHelper {
     const doc = dom.window.document;
     const target = doc.getElementById("content");
 
-    DOMSerializer.fromSchema(schema).serializeFragment(
-      node.content,
-      {
-        document: doc,
-      },
-      // @ts-expect-error incorrect library type, third argument is target node
-      target
-    );
+    if (target) {
+      const fragment = doc.createDocumentFragment();
+      // @ts-expect-error - Bypassing persistent and misleading TS error
+      DOMSerializer.fromSchema(schema).serializeFragment(
+        node.content,
+        { document: doc },
+        fragment
+      );
+      target.appendChild(fragment);
+    } else {
+       Logger.error("Target #content element not found for HTML serialization");
+    }
 
     // Convert relative urls to absolute
     if (options?.baseUrl) {
@@ -553,6 +566,246 @@ export class ProsemirrorHelper {
 
       dom.window.document.body.appendChild(element);
     }
+
+    return dom.serialize();
+  }
+
+  /**
+   * Returns the node as HTML specifically formatted for PDF generation.
+   * Includes server-side rendering for math and code, and placeholders for embeds.
+   *
+   * @param node The node to convert to HTML
+   * @param options Options for the HTML output
+   * @returns The content as a HTML string suitable for PDF conversion
+   */
+  static toPdfHtml(node: Node, options?: PdfHtmlOptions): string {
+    const sheet = new ServerStyleSheet();
+    let html = "";
+    let styleTags = "";
+
+    // TODO: Inject KaTeX and highlight.js CSS into styleTags
+    // styleTags += `<style>${katexCss}</style>`;
+    // styleTags += `<style>${hljsCss}</style>`;
+
+    const Centered = options?.centered
+      ? styled.article`
+          max-width: 46em;
+          margin: 0 auto;
+          padding: 0 1em;
+        `
+      : "article";
+
+    const rtl = isRTL(node.textContent);
+    const content = <div id="content" className="ProseMirror" />;
+    const children = (
+      <>
+        {options?.title && <h1 dir={rtl ? "rtl" : "ltr"}>{options.title}</h1>}
+        {options?.includeStyles !== false ? (
+          <EditorContainer dir={rtl ? "rtl" : "ltr"} rtl={rtl} staticHTML>
+            {content}
+          </EditorContainer>
+        ) : (
+          content
+        )}
+      </>
+    );
+
+    try {
+      html = renderToString(
+        sheet.collectStyles(
+          <ThemeProvider theme={light}>
+            <>
+              {options?.includeStyles === false ? (
+                <article>{children}</article>
+              ) : (
+                <>
+                  <GlobalStyles staticHTML />
+                  <Centered>{children}</Centered>
+                </>
+              )}
+            </>
+          </ThemeProvider>
+        )
+      );
+      styleTags += sheet.getStyleTags(); // Append styled-components styles
+    } catch (error) {
+      Logger.error("Failed to render styles for PDF HTML conversion", error);
+    } finally {
+      sheet.seal();
+    }
+
+    const dom = new JSDOM(
+      `<!DOCTYPE html><html><head><meta charset="utf-8">${styleTags}</head><body>${html}</body></html>`
+    );
+    const doc = dom.window.document;
+    const target = doc.getElementById("content");
+
+    if (!target) {
+      Logger.error("Target #content element not found for PDF HTML serialization");
+      return dom.serialize(); // Return what we have
+    }
+
+    // Custom serializer function to handle specific nodes
+    const serializeNode = (nodeToSerialize: Node, targetElement: HTMLElement) => {
+      if (nodeToSerialize.type.name === "math_inline" || nodeToSerialize.type.name === "math_block") {
+        try {
+          const isBlock = nodeToSerialize.type.name === "math_block";
+          const renderedMath = katex.renderToString(nodeToSerialize.textContent || "", {
+            displayMode: isBlock,
+            throwOnError: false, // Don't throw errors, maybe log them
+            output: "html", // Use HTML+MathML for better compatibility
+          });
+          const span = doc.createElement(isBlock ? 'div' : 'span');
+          span.className = `math ${isBlock ? 'math-block' : 'math-inline'}`;
+          span.innerHTML = renderedMath;
+          targetElement.appendChild(span);
+        } catch (e) {
+          Logger.warn("KaTeX rendering failed server-side", { error: e, latex: nodeToSerialize.textContent });
+          // Fallback: render the raw LaTeX source
+          const fallback = doc.createElement(nodeToSerialize.type.name === "math_block" ? 'div' : 'span');
+          fallback.className = `math-error ${nodeToSerialize.type.name}`;
+          fallback.textContent = nodeToSerialize.textContent;
+          targetElement.appendChild(fallback);
+        }
+      } else if (nodeToSerialize.type.name === "code_block") {
+        const language = nodeToSerialize.attrs.language || 'plaintext';
+        const code = nodeToSerialize.textContent || "";
+        let highlightedCode;
+        try {
+          if (language === 'mermaidjs') {
+             // Keep mermaid code raw for client-side rendering via script
+             highlightedCode = code;
+          } else if (hljs.getLanguage(language)) {
+            highlightedCode = hljs.highlight(code, { language, ignoreIllegals: true }).value;
+          } else {
+            highlightedCode = hljs.highlightAuto(code).value; // Auto-detect if language not supported/found
+          }
+        } catch (e) {
+           Logger.warn("Highlight.js rendering failed server-side", { error: e, language, code });
+           highlightedCode = code; // Fallback to raw code
+        }
+
+        const div = doc.createElement('div');
+        div.className = `code-block language-${language}`; // Add language class for potential CSS
+        div.dataset.language = language;
+        const pre = doc.createElement('pre');
+        const codeEl = doc.createElement('code');
+        codeEl.innerHTML = highlightedCode; // Use innerHTML as highlight.js returns HTML
+        codeEl.spellcheck = false;
+        pre.appendChild(codeEl);
+        div.appendChild(pre);
+        targetElement.appendChild(div);
+
+      } else if (nodeToSerialize.type.name === "embed") {
+         const href = nodeToSerialize.attrs.href || "#";
+         const placeholder = doc.createElement('div');
+         placeholder.className = 'embed-placeholder';
+         const link = doc.createElement('a');
+         link.href = href;
+         link.textContent = `[Embed: ${href}]`;
+         link.target = "_blank"; // Open in new tab
+         placeholder.appendChild(link);
+         // Optional: Add icon/thumbnail later
+         targetElement.appendChild(placeholder);
+
+      } else if (nodeToSerialize.isText) {
+        // Handle text nodes directly
+        targetElement.appendChild(doc.createTextNode(nodeToSerialize.text || ""));
+      }
+       else {
+        // Default serialization for other nodes using DOMSerializer
+        const serializer = DOMSerializer.fromSchema(schema);
+        try {
+          // Create a fragment of the node's content if it's a block node,
+          // otherwise, create a fragment containing the node itself (for inline nodes with marks)
+          const fragment = nodeToSerialize.isBlock
+             ? nodeToSerialize.content
+             : Fragment.from(nodeToSerialize);
+
+          // Serialize the fragment into a temporary DocumentFragment
+          const tempFragment = doc.createDocumentFragment();
+          // Note: serializeFragment requires a Node or DocumentFragment as target.
+          // @ts-expect-error - Bypassing persistent and misleading TS error
+          serializer.serializeFragment(fragment, { document: doc }, tempFragment);
+
+          // Append the serialized content from the fragment
+          // to the target element
+          targetElement.appendChild(tempFragment);
+        } catch (e) {
+           Logger.error(`Failed to serialize node type ${nodeToSerialize.type.name} for PDF`, e);
+           // Optionally render text content as fallback
+           if (nodeToSerialize.textContent) {
+              targetElement.appendChild(doc.createTextNode(nodeToSerialize.textContent));
+           }
+        }
+      }
+    };
+
+    // Serialize the main document content using the custom function
+    node.content.forEach(childNode => serializeNode(childNode, target));
+
+
+    // Convert relative urls to absolute (if base url provided)
+    if (options?.baseUrl) {
+      const elements = doc.querySelectorAll("a[href]");
+      for (const el of elements) {
+        if ("href" in el && (el.href as string).startsWith("/")) {
+          el.href = new URL(el.href as string, options.baseUrl).toString();
+        }
+      }
+    }
+
+    // Inject mermaidjs scripts if the document contains mermaid diagrams
+    // (This part remains the same as the original toHTML)
+    if (options?.includeMermaid) {
+      const mermaidElements = doc.querySelectorAll(
+        `[data-language="mermaidjs"] code` // Target the generated code element
+      );
+
+      if (mermaidElements.length > 0) {
+        // Modify the container for mermaid rendering
+        mermaidElements.forEach(el => {
+          const parentPre = el.parentElement; // pre
+          const parentDiv = parentPre?.parentElement; // div.code-block
+          if (parentDiv && parentPre) {
+             parentDiv.innerHTML = el.innerHTML; // Move code content directly into div
+             parentDiv.classList.add("mermaid"); // Add mermaid class for the script to find
+             parentDiv.classList.remove("code-block", `language-mermaidjs`); // Remove code block classes
+          }
+        });
+
+        const element = doc.createElement("script");
+        element.setAttribute("type", "module");
+        element.innerHTML = `
+            try {
+              await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(m => {
+                m.default.initialize({
+                  startOnLoad: false, // We call render explicitly
+                  fontFamily: "inherit",
+                  // Add any other necessary config
+                });
+                m.default.run({ nodes: document.querySelectorAll('.mermaid') });
+              });
+            } catch (e) {
+              console.error("Mermaid failed to load or run", e);
+            } finally {
+              window.status = "ready"; // Signal completion regardless of mermaid success
+            }
+        `;
+        doc.body.appendChild(element);
+      } else {
+         // Still need to signal ready even if no mermaid diagrams
+         const element = doc.createElement("script");
+         element.innerHTML = `window.status = "ready";`;
+         doc.body.appendChild(element);
+      }
+    } else {
+       // If mermaid isn't included, signal ready immediately
+       const element = doc.createElement("script");
+       element.innerHTML = `window.status = "ready";`;
+       doc.body.appendChild(element);
+    }
+
 
     return dom.serialize();
   }
