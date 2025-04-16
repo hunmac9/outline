@@ -718,9 +718,8 @@ router.post(
         includeMermaid: true,
       });
     } else if (accept?.includes("application/pdf")) {
-      throw IncorrectEditionError(
-        "PDF export is not available in the community edition"
-      );
+      contentType = "application/pdf";
+      content = await DocumentHelper.toPDF(document);
     } else if (accept?.includes("text/markdown")) {
       contentType = "text/markdown";
       content = DocumentHelper.toMarkdown(document);
