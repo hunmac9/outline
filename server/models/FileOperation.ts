@@ -56,7 +56,7 @@ class FileOperation extends ParanoidModel<
   @Column(DataType.ENUM(...Object.values(FileOperationType)))
   type: FileOperationType;
 
-  @Column(DataType.STRING)
+  @Column(DataType.ENUM(...Object.values(FileOperationFormat)))
   format: FileOperationFormat;
 
   @Column(DataType.ENUM(...Object.values(FileOperationState)))

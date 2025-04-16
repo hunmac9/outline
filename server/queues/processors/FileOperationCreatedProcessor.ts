@@ -46,11 +46,11 @@ export default class FileOperationCreatedProcessor extends BaseProcessor {
              fileOperationId: event.modelId,
            });
            break;
-+        case FileOperationFormat.PDF:
-+          await ExportPDFTask.schedule({
-+            fileOperationId: event.modelId,
-+          });
-+          break;
+        case FileOperationFormat.PDF:
+          await ExportPDFTask.schedule({
+            fileOperationId: event.modelId,
+          });
+          break;
          default:
        }
      }
