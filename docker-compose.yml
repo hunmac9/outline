@@ -38,7 +38,7 @@ services:
     build:        # This uses your Dockerfile in the current dir
       context: .
       dockerfile: Dockerfile
-    image: outline-personalmods
+    image: outline-personalmods2
     depends_on:
       - postgres
       - redis

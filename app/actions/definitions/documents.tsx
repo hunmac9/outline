@@ -442,8 +442,7 @@ export const downloadDocumentAsPDF = createAction({
   iconInContextMenu: false,
   visible: ({ activeDocumentId, stores }) =>
     !!activeDocumentId &&
-    stores.policies.abilities(activeDocumentId).download &&
-    env.PDF_EXPORT_ENABLED,
+    stores.policies.abilities(activeDocumentId).download,
   perform: ({ activeDocumentId, t, stores }) => {
     if (!activeDocumentId) {
       return;

@@ -27,17 +27,12 @@ export default class FileOperationCreatedProcessor extends BaseProcessor {
           break;
         case FileOperationFormat.JSON:
           await ImportJSONTask.schedule({
-            fileOperationId: event.modelId,
-          });
-          break;
-        case FileOperationFormat.PDF: // Add case for PDF
-          await ExportPDFTask.schedule({
-            fileOperationId: event.modelId,
-          });
-          break;
-        default:
-      }
-    }
+             fileOperationId: event.modelId,
+           });
+           break;
+         default:
+       }
+     }
 
     if (fileOperation.type === FileOperationType.Export) {
       switch (fileOperation.format) {
@@ -48,16 +43,16 @@ export default class FileOperationCreatedProcessor extends BaseProcessor {
           break;
         case FileOperationFormat.MarkdownZip:
           await ExportMarkdownZipTask.schedule({
-            fileOperationId: event.modelId,
-          });
-          break;
-        case FileOperationFormat.JSON:
-          await ExportJSONTask.schedule({
-            fileOperationId: event.modelId,
-          });
-          break;
-        default:
-      }
-    }
+             fileOperationId: event.modelId,
+           });
+           break;
++        case FileOperationFormat.PDF:
++          await ExportPDFTask.schedule({
++            fileOperationId: event.modelId,
++          });
++          break;
+         default:
+       }
+     }
   }
 }
