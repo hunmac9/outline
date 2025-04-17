@@ -81,6 +81,8 @@ import { RateLimiterStrategy } from "@server/utils/RateLimiter";
 import ZipHelper from "@server/utils/ZipHelper";
 import { getTeamFromContext } from "@server/utils/passport";
 import { assertPresent } from "@server/validation";
+import PdfGenerator from "@server/services/PdfGenerator"; // Import the new service
+import { serializeFilename } from "@server/utils/fs"; // Import for filename generation
 import pagination from "../middlewares/pagination";
 import * as T from "./schema";
 
@@ -698,6 +700,41 @@ router.post(
   }
 );
 
+// New endpoint for direct PDF download of a single document
+router.post(
+  "documents.exportDirectPdf",
+  rateLimiter(RateLimiterStrategy.TwentyFivePerMinute),
+  auth(), // Require authentication
+  validate(T.DocumentsExportDirectPdfSchema), // Need to define this schema
+  async (ctx: APIContext<T.DocumentsExportDirectPdfReq>) => {
+    const { id } = ctx.input.body;
+    const { user } = ctx.state.auth;
+
+    const { document, team } = await documentLoader({
+      id,
+      user,
+      teamId: user.teamId,
+      // We need the collaborative state to generate HTML.
+      includeState: true,
+    });
+    authorize(user, "read", document);
+
+    try {
+      const pdfBuffer = await PdfGenerator.generatePdfForDocument(document, team);
+      const fileName = `${serializeFilename(document.titleWithDefault)}.pdf`;
+
+      ctx.set("Content-Type", "application/pdf");
+      ctx.set("Content-Disposition", `attachment; filename="${fileName}"`);
+      ctx.body = pdfBuffer;
+    } catch (error) {
+      Logger.error("Failed to generate direct PDF export", error, { documentId: id, userId: user.id });
+      // Throw a generic error to the client, details are logged
+      throw new Error("Failed to generate PDF export. Please try again later.");
+    }
+  }
+);
+
+
 router.post(
   "documents.export",
   rateLimiter(RateLimiterStrategy.TwentyFivePerMinute),
@@ -725,30 +762,14 @@ router.post(
         includeMermaid: true,
       });
     } else if (accept?.includes("application/pdf")) {
-      // Trigger background PDF export instead of direct generation
-      const fileOperation = await FileOperation.create({
-        type: FileOperationType.Export,
-        format: FileOperationFormat.PDF,
-        state: FileOperationState.Creating,
-        userId: user.id,
-        teamId: user.teamId,
-        documentId: document.id, // Associate with the specific document
-        key: `exports/${user.id}/${uuidv4()}.pdf`, // Use PDF extension for key
-        options: {
-          includeAttachments: true, // Or based on user preference/request
-        },
-      });
-
-      await ExportPDFTask.schedule({
-        fileOperationId: fileOperation.id,
-      });
-
-      // Respond immediately indicating the export has started
-      ctx.body = {
-        success: true,
-        message: "PDF export started. You will be notified when it's complete.",
-      };
-      return; // Important: Return early, don't proceed with direct content response
+       // NOTE: Direct PDF download is handled by documents.exportDirectPdf
+       // This route should no longer handle application/pdf requests directly.
+       // We keep the async task creation for collection/workspace exports elsewhere.
+       // For single document PDF export via this route, we could either:
+       // 1. Return an error telling the client to use the new endpoint.
+       // 2. Fallback to the async task (less ideal UX).
+       // For now, let's throw an error.
+       throw new InvalidRequestError("Direct PDF export should use the documents.exportDirectPdf endpoint.");
     } else if (accept?.includes("text/markdown")) {
       contentType = "text/markdown";
       content = DocumentHelper.toMarkdown(document);

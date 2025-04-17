@@ -159,6 +159,14 @@ export const DocumentsExportSchema = BaseSchema.extend({
 
 export type DocumentsExportReq = z.infer<typeof DocumentsExportSchema>;
 
+export const DocumentsExportDirectPdfSchema = BaseSchema.extend({
+  body: BaseIdSchema,
+});
+
+export type DocumentsExportDirectPdfReq = z.infer<
+  typeof DocumentsExportDirectPdfSchema
+>;
+
 export const DocumentsRestoreSchema = BaseSchema.extend({
   body: BaseIdSchema.extend({
     /** Id of the collection to which the document belongs */

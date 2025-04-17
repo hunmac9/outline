@@ -682,17 +682,35 @@ export default class Document extends ArchivableModel implements Searchable {
     return text;
   };
 
-  download = (contentType: ExportContentType) =>
-    client.post(
-      `/documents.export`,
-      {
-        id: this.id,
-      },
-      {
-        download: true,
-        headers: {
-          accept: contentType,
+  download = (contentType: ExportContentType) => {
+    // If PDF is requested for a single document, use the new direct download endpoint
+    if (contentType === ExportContentType.Pdf) { // Corrected enum case
+      return client.post(
+        `/documents.exportDirectPdf`,
+        {
+          id: this.id,
         },
-      }
-    );
+        {
+          // responseType: "blob", // Remove invalid option - handle blob in caller
+          // The actual download trigger (creating a link, clicking it)
+          // will likely need to be handled where this `download` method is called,
+          // as this method just returns the promise for the response.
+        }
+      );
+    } else {
+      // Otherwise, use the original export endpoint for other formats (Markdown, HTML)
+      return client.post(
+        `/documents.export`,
+        {
+          id: this.id,
+        },
+        {
+          download: true, // Keep original behavior for non-PDF
+          headers: {
+            accept: contentType,
+          },
+        }
+      );
+    }
+  };
 }
