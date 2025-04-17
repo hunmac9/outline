@@ -2,10 +2,13 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.addColumn('file_operations', 'documentId', {
-      type: Sequelize.UUID,
-      allowNull: true
-    });
+    const tableDefinition = await queryInterface.describeTable('file_operations');
+    if (!tableDefinition.documentId) {
+      await queryInterface.addColumn('file_operations', 'documentId', {
+        type: Sequelize.UUID,
+        allowNull: true
+      });
+    }
   },
 
   down: async (queryInterface, Sequelize) => {
