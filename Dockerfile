@@ -25,8 +25,9 @@ COPY --from=builder $APP_PATH/node_modules ./node_modules
 COPY --from=builder $APP_PATH/package.json ./package.json
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends wget \
+  && apt-get install -y --no-install-recommends wget chromium \
   && rm -rf /var/lib/apt/lists/*
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 RUN addgroup --gid 1001 nodejs && \
   adduser --uid 1001 --ingroup nodejs nodejs && \
