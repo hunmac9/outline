@@ -205,9 +205,20 @@ export enum UserPreference {
   SortCommentsByOrderInDocument = "sortCommentsByOrderInDocument",
   /** Whether smart text replacements should be enabled. */
   EnableSmartText = "enableSmartText",
+  /** Custom background color for the app interface. */
+  BackgroundColor = "backgroundColor",
 }
 
-export type UserPreferences = { [key in UserPreference]?: boolean };
+export type UserPreferences = {
+  [UserPreference.RememberLastPath]?: boolean;
+  [UserPreference.UseCursorPointer]?: boolean;
+  [UserPreference.CodeBlockLineNumers]?: boolean;
+  [UserPreference.SeamlessEdit]?: boolean;
+  [UserPreference.FullWidthDocuments]?: boolean;
+  [UserPreference.SortCommentsByOrderInDocument]?: boolean;
+  [UserPreference.EnableSmartText]?: boolean;
+  [UserPreference.BackgroundColor]?: string | null;
+};
 
 export type SourceMetadata = {
   /** The original source file name. */

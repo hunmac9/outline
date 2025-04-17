@@ -8,6 +8,7 @@ import { TeamPreference, UserPreference } from "@shared/types";
 import { Theme } from "~/stores/UiStore";
 import Button from "~/components/Button";
 import Heading from "~/components/Heading";
+import InputColor from "~/components/InputColor";
 import { InputSelectNew, Option } from "~/components/InputSelectNew";
 import Scene from "~/components/Scene";
 import Switch from "~/components/Switch";
@@ -75,6 +76,19 @@ function Preferences() {
     },
     [t, ui]
   );
+
+  const handleBackgroundColorChange = React.useCallback(
+    async (color: string) => {
+      await user.savePreferences({ [UserPreference.BackgroundColor]: color });
+      toast.success(t("Preferences saved"));
+    },
+    [t, user]
+  );
+
+  const handleBackgroundColorClear = React.useCallback(async () => {
+    await user.savePreferences({ [UserPreference.BackgroundColor]: null });
+    toast.success(t("Preferences saved"));
+  }, [t, user]);
 
   const handleMobileFullWidthChange = React.useCallback(
     (ev: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,6 +169,32 @@ function Preferences() {
           label={t("Appearance")}
           hideLabel
         />
+      </SettingRow>
+      <SettingRow
+        name={UserPreference.BackgroundColor}
+        label={t("Background color")}
+        description={t(
+          "Choose a custom background color for the interface. Requires a page refresh to take effect."
+        )}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <InputColor
+            value={user.getPreference(UserPreference.BackgroundColor) ?? ""}
+            onChange={handleBackgroundColorChange}
+          />
+          {user.getPreference(UserPreference.BackgroundColor) && (
+            <Button
+              type="button"
+              onClick={handleBackgroundColorClear}
+              neutral
+              small
+              style={{ marginLeft: 4 }}
+              title={t("Reset background color")}
+            >
+              {t("Reset")}
+            </Button>
+          )}
+        </div>
       </SettingRow>
       <SettingRow
         name={UserPreference.UseCursorPointer}

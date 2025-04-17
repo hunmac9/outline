@@ -337,8 +337,26 @@ router.post(
       user.language = language;
     }
     if (preferences) {
-      for (const key of Object.keys(preferences) as Array<UserPreference>) {
-        user.setPreference(key, preferences[key] as boolean);
+      for (const key of Object.keys(preferences)) {
+        const typedKey = key as UserPreference;
+        const value = preferences[typedKey];
+
+        if (typedKey === UserPreference.BackgroundColor) {
+          // Directly set string or null for background color
+          if (!user.preferences) {
+            user.preferences = {};
+          }
+          // Ensure the value is either a string or null before assigning
+          if (typeof value === "string" || value === null) {
+            user.preferences = {
+              ...user.preferences,
+              [typedKey]: value,
+            };
+          }
+        } else if (typeof value === "boolean") {
+          // Use existing method for boolean preferences
+          user.setPreference(typedKey, value);
+        }
       }
     }
     if (timezone) {

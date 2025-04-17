@@ -89,16 +89,39 @@ export default class ExportPDFTask extends BaseTask<ExportPDFTaskPayload> {
 
       // Fetch documents to export
       let documents: Document[];
-      let collectionsToMap: Collection[];
+      let collectionsToMap: Collection[] = []; // Initialize to empty array
 
-      if (collection) {
+      // Check if exporting a single document
+      if (fileOperation.documentId) {
+        const document = await Document.findByPk(fileOperation.documentId, {
+          rejectOnEmpty: true, // Throw if document not found
+        });
+        // Ensure the user has access (although the API route should have checked this)
+        // Basic check: teamId must match
+        if (document.teamId !== team.id) {
+          throw new Error(
+            `User ${user.id} does not have access to document ${document.id}`
+          );
+        }
+        documents = [document];
+        // If the document has a collection, use it for path mapping, otherwise map to root
+        if (document.collectionId) {
+          const docCollection = await Collection.findByPk(document.collectionId);
+          if (docCollection) {
+            collectionsToMap = [docCollection];
+          }
+        }
+      } else if (collection) {
+        // Export a specific collection
         documents = await Document.findAll({
           where: { collectionId: collection.id, teamId: team.id },
         });
         collectionsToMap = [collection];
       } else {
-        // Export all documents in the team
-        const userCollections = await Collection.scope({ method: ["withMembership", user.id] }).findAll({
+        // Export all documents in the team accessible by the user
+        const userCollections = await Collection.scope({
+          method: ["withMembership", user.id],
+        }).findAll({
           where: { teamId: team.id },
         });
         collectionsToMap = userCollections;
@@ -174,8 +197,8 @@ export default class ExportPDFTask extends BaseTask<ExportPDFTaskPayload> {
                     const attachmentZipPath = path.join(path.dirname(documentPath), attachment.key);
                     zip.append(buffer, { name: attachmentZipPath, date: attachment.updatedAt });
                  } catch (err) {
-                    // Use (message, error, metadata) signature
-                    Logger.warn(`Failed to read attachment ${attachment.id} for PDF export`, err, { fileOperationId, documentId: document.id });
+                    // Use (message, metadata) signature, include error in metadata
+                    Logger.warn(`Failed to read attachment ${attachment.id} for PDF export`, { error: err, fileOperationId, documentId: document.id });
                  }
               }
            }
@@ -228,11 +251,8 @@ export default class ExportPDFTask extends BaseTask<ExportPDFTaskPayload> {
       if (browser) {
         await browser.close();
       }
-      // Clean up temporary file and mark promise as intentionally unhandled
-      void fs.remove(tmpPath).catch(err => Logger.error("Failed to remove temp export file", { 
-        error: err,
-        tmpPath 
-      }));
+       // Clean up temporary file and mark promise as intentionally unhandled
+       void fs.remove(tmpPath).catch(err => Logger.error(`Failed to remove temp export file ${tmpPath}: ${err.message}`));
     }
   }
 }

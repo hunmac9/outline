@@ -40,6 +40,7 @@ import {
   Collection,
   Document,
   Event,
+  FileOperation, // Import FileOperation
   Revision,
   SearchQuery,
   User,
@@ -68,8 +69,14 @@ import DocumentImportTask, {
   DocumentImportTaskResponse,
 } from "@server/queues/tasks/DocumentImportTask";
 import EmptyTrashTask from "@server/queues/tasks/EmptyTrashTask";
+import ExportPDFTask from "@server/queues/tasks/ExportPDFTask"; // Import ExportPDFTask
 import FileStorage from "@server/storage/files";
 import { APIContext } from "@server/types";
+import {
+  FileOperationFormat, // Import FileOperationFormat
+  FileOperationState, // Import FileOperationState
+  FileOperationType, // Import FileOperationType
+} from "@shared/types";
 import { RateLimiterStrategy } from "@server/utils/RateLimiter";
 import ZipHelper from "@server/utils/ZipHelper";
 import { getTeamFromContext } from "@server/utils/passport";
@@ -718,8 +725,30 @@ router.post(
         includeMermaid: true,
       });
     } else if (accept?.includes("application/pdf")) {
-      contentType = "application/pdf";
-      content = await DocumentHelper.toPDF(document);
+      // Trigger background PDF export instead of direct generation
+      const fileOperation = await FileOperation.create({
+        type: FileOperationType.Export,
+        format: FileOperationFormat.PDF,
+        state: FileOperationState.Creating,
+        userId: user.id,
+        teamId: user.teamId,
+        documentId: document.id, // Associate with the specific document
+        key: `exports/${user.id}/${uuidv4()}.pdf`, // Use PDF extension for key
+        options: {
+          includeAttachments: true, // Or based on user preference/request
+        },
+      });
+
+      await ExportPDFTask.schedule({
+        fileOperationId: fileOperation.id,
+      });
+
+      // Respond immediately indicating the export has started
+      ctx.body = {
+        success: true,
+        message: "PDF export started. You will be notified when it's complete.",
+      };
+      return; // Important: Return early, don't proceed with direct content response
     } else if (accept?.includes("text/markdown")) {
       contentType = "text/markdown";
       content = DocumentHelper.toMarkdown(document);

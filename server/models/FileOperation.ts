@@ -21,6 +21,7 @@ import {
 } from "@shared/types";
 import FileStorage from "@server/storage/files";
 import Collection from "./Collection";
+import Document from "./Document"; // Import Document model
 import Team from "./Team";
 import User from "./User";
 import ParanoidModel from "./base/ParanoidModel";
@@ -138,6 +139,10 @@ class FileOperation extends ParanoidModel<
   @ForeignKey(() => Collection)
   @Column(DataType.UUID)
   collectionId?: string | null;
+
+  @ForeignKey(() => Document)
+  @Column(DataType.UUID)
+  documentId?: string | null;
 
   /**
    * Count the number of export file operations for a given team after a point

@@ -131,12 +131,10 @@ export const buildLightTheme = (input: Partial<Colors>): DefaultTheme => {
     sidebarText: "rgb(78, 92, 110)",
     backdrop: "rgba(0, 0, 0, 0.2)",
     shadow: "rgba(0, 0, 0, 0.2)",
-
     modalBackdrop: "rgba(0, 0, 0, 0.15)",
     modalBackground: colors.white,
     modalShadow:
       "0 4px 8px rgb(0 0 0 / 8%), 0 2px 4px rgb(0 0 0 / 0%), 0 30px 40px rgb(0 0 0 / 8%)",
-
     menuItemSelected: colors.warmGrey,
     menuBackground: colors.white,
     menuShadow:
@@ -194,16 +192,14 @@ export const buildDarkTheme = (input: Partial<Colors>): DefaultTheme => {
     sidebarText: colors.slate,
     backdrop: "rgba(0, 0, 0, 0.5)",
     shadow: "rgba(0, 0, 0, 0.6)",
-
     modalBackdrop: colors.black50,
     modalBackground: "#181c25",
     modalShadow:
       "0 0 0 1px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.08)",
-
     menuItemSelected: lighten(0.09, "#181c25"),
     menuBackground: "#181c25",
     menuShadow:
-      "0 0 0 1px rgb(34 40 52), 0 8px 16px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.08)",
+      "0 0 0 1px rgb(34 40 52), 0 8px 16px rgba(0, 0 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.08)",
     divider: lighten(0.1, colors.almostBlack),
     titleBarDivider: darken(0.4, colors.slate),
     inputBorder: colors.slateDark,
@@ -244,7 +240,6 @@ export const buildDarkTheme = (input: Partial<Colors>): DefaultTheme => {
 
 export const buildPitchBlackTheme = (input: Partial<Colors>) => {
   const colors = buildDarkTheme(input);
-
   return {
     ...colors,
     background: colors.black,

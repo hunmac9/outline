@@ -214,24 +214,70 @@ class User extends ParanoidModel implements Searchable {
    * @param key The UserPreference key to retrieve
    * @returns The value
    */
-  getPreference(key: UserPreference, defaultValue = false): boolean {
-    return (
-      this.preferences?.[key] ?? UserPreferenceDefaults[key] ?? defaultValue
-    );
+  getPreference(
+    key: UserPreference.BackgroundColor
+  ): string | null | undefined;
+  getPreference(key: UserPreference, defaultValue?: boolean): boolean;
+  getPreference(
+    key: UserPreference,
+    defaultValue?: boolean | string | null
+  ): boolean | string | null | undefined {
+    const value = this.preferences?.[key];
+
+    if (key === UserPreference.BackgroundColor) {
+      // Explicitly handle null/undefined for background color
+      return value === undefined ? defaultValue : value;
+    }
+
+    // Handle boolean preferences
+    return value ?? UserPreferenceDefaults[key] ?? defaultValue ?? false;
   }
 
   /**
    * Set the value for a specific preference key.
    *
-   * @param key The UserPreference key to retrieve
+   * Set the value for a specific preference key locally on the model.
+   * Does not persist to the server, use savePreferences for that.
+   *
+   * @param key The UserPreference key to set
    * @param value The value to set
    */
-  setPreference(key: UserPreference, value: boolean) {
+  @action
+  setPreference(key: UserPreference, value: boolean | string | null) {
     this.preferences = {
       ...this.preferences,
       [key]: value,
     };
   }
+
+  /**
+   * Saves one or more preferences to the server.
+   *
+   * @param prefs An object containing the preferences to update.
+   */
+  @action
+  savePreferences = async (prefs: Partial<UserPreferences>) => {
+    const previousPreferences = { ...this.preferences };
+
+    // Update local state optimistically
+    for (const key in prefs) {
+      this.setPreference(
+        key as UserPreference,
+        prefs[key as UserPreference] as boolean | string | null
+      );
+    }
+
+    try {
+      await client.post("/users.update", {
+        id: this.id,
+        preferences: prefs,
+      });
+    } catch (error) {
+      // Revert local state on error
+      this.preferences = previousPreferences;
+      throw error;
+    }
+  };
 
   getMembership(document: Document) {
     return this.store.rootStore.userMemberships.orderedData.find(

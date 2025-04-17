@@ -83,7 +83,22 @@ export const UsersUpdateSchema = BaseSchema.extend({
     name: z.string().optional(),
     avatarUrl: z.string().nullish(),
     language: zodEnumFromObjectKeys(locales).optional(),
-    preferences: z.record(z.nativeEnum(UserPreference), z.boolean()).optional(),
+    preferences: z
+      .object({
+        [UserPreference.RememberLastPath]: z.boolean().optional(),
+        [UserPreference.UseCursorPointer]: z.boolean().optional(),
+        [UserPreference.CodeBlockLineNumers]: z.boolean().optional(),
+        [UserPreference.SeamlessEdit]: z.boolean().optional(),
+        [UserPreference.FullWidthDocuments]: z.boolean().optional(),
+        [UserPreference.SortCommentsByOrderInDocument]: z.boolean().optional(),
+        [UserPreference.EnableSmartText]: z.boolean().optional(),
+        [UserPreference.BackgroundColor]: z
+          .string()
+          .regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color code")
+          .nullable()
+          .optional(),
+      })
+      .optional(),
     timezone: zodTimezone().optional(),
   }),
 });
