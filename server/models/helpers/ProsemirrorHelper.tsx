@@ -87,13 +87,33 @@ export class ProsemirrorHelper {
    * Converts a plain object into a Prosemirror Node.
    *
    * @param data The ProsemirrorData object or string to parse.
-   * @returns The content as a Prosemirror Node
+   * @returns The content as a Prosemirror Node, or an empty node if input is invalid.
    */
-  static toProsemirror(data: ProsemirrorData | string) {
+  static toProsemirror(data: ProsemirrorData | string | null | undefined): Node {
     if (typeof data === "string") {
-      return parser.parse(data);
+      try {
+        const parsed = parser.parse(data);
+        return parsed || Node.fromJSON(schema, { type: "doc", content: [] }); // Return empty doc if parse fails
+      } catch (error) {
+        Logger.error("Failed to parse markdown string in toProsemirror", error, { input: data });
+        return Node.fromJSON(schema, { type: "doc", content: [] }); // Fallback to empty doc
+      }
     }
-    return Node.fromJSON(schema, data);
+
+    if (!data || typeof data !== 'object' || !data.type) {
+       Logger.warn("Invalid or null data passed to toProsemirror, returning empty document.", { data });
+       return Node.fromJSON(schema, { type: "doc", content: [] }); // Return empty doc for null/invalid input
+    }
+
+    try {
+      // Attempt to create the node from JSON
+      return Node.fromJSON(schema, data);
+    } catch (error) {
+      // Log the error and the problematic data structure
+      Logger.error("Failed to create Node from JSON in toProsemirror", error, { data });
+      // Return an empty document node as a fallback
+      return Node.fromJSON(schema, { type: "doc", content: [] });
+    }
   }
 
   /**
