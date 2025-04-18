@@ -11,7 +11,6 @@ import {
 } from "@server/errors";
 import { Collection, Document, Share, User, Team } from "@server/models";
 import { authorize, can } from "@server/policies";
-import { assertPresent } from "@server/validation";
 
 type Props = {
   id?: string;
@@ -25,7 +24,6 @@ type Result = {
   document: Document;
   share?: Share;
   collection?: Collection | null;
-  team: Team; // Add team to the result type
 };
 
 export default async function loadDocument({
@@ -141,17 +139,10 @@ export default async function loadDocument({
         }
       }
 
-      // Also load and return the team in this path
-      const team = await Team.findByPk(document.teamId);
-      if (!team) {
-        throw new Error(`Team not found for document ${document.id}`);
-      }
-
       return {
         document,
         share,
         collection,
-        team, // Add team here
       };
     }
 
@@ -230,18 +221,9 @@ export default async function loadDocument({
     collection = document.collection;
   }
 
-  // Load the team associated with the document
-  const team = await Team.findByPk(document.teamId);
-
-  // Explicit null check to satisfy TypeScript and ensure team exists
-  if (!team) {
-    throw new Error(`Team not found for document ${document.id}`);
-  }
-
   return {
     document,
     share,
     collection,
-    team, // Return the loaded team
   };
 }
