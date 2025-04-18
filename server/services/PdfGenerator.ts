@@ -33,8 +33,8 @@ class PdfGenerator {
         ],
       });
 
-      // @ts-expect-error ProsemirrorHelper.toProsemirror returns ProsemirrorData, toPdfHtml expects Node
-      const node = ProsemirrorHelper.toProsemirror(document);
+      // Removed unused @ts-expect-error directive
+      const node = ProsemirrorHelper.toProsemirror(document.content);
       const html = ProsemirrorHelper.toPdfHtml(node as any, { // Cast to any to bypass TS error temporarily
         title: document.title,
         includeStyles: true,
