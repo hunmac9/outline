@@ -112,34 +112,35 @@ function ExportDialog({ collection, document, onSubmit }: Props) {
           },
         },
       });
-    } else if (!document) { // Check if it's a workspace export (no document, no collection)
+    } else if (!document) {
+      // Check if it's a workspace export (no document, no collection)
       await collections.export(format, includeAttachments);
       toast.success(t("Workspace export started"));
     } else {
-       // Handle non-PDF export for single document (use the document model's download method)
-       // The original documents.export call was incorrect here.
-       // We need to map FileOperationFormat back to ExportContentType
-       let contentType: ExportContentType;
-       if (format === FileOperationFormat.MarkdownZip) {
-         contentType = ExportContentType.Markdown;
-       } else if (format === FileOperationFormat.HTMLZip) {
-         contentType = ExportContentType.Html; // Corrected enum case
-       } else {
-         // Handle JSON or other formats if needed, or throw error
-         toast.error(t("Unsupported format for direct download"));
-         return;
-       }
+      // Handle non-PDF export for single document (use the document model's download method)
+      // The original documents.export call was incorrect here.
+      // We need to map FileOperationFormat back to ExportContentType
+      let contentType: ExportContentType;
+      if (format === FileOperationFormat.MarkdownZip) {
+        contentType = ExportContentType.Markdown;
+      } else if (format === FileOperationFormat.HTMLZip) {
+        contentType = ExportContentType.Html; // Corrected enum case
+      } else {
+        // Handle JSON or other formats if needed, or throw error
+        toast.error(t("Unsupported format for direct download"));
+        return;
+      }
 
-       try {
-         await document.download(contentType);
-         // Since the non-PDF download is also direct (handled by browser via content-disposition)
-         // we can show a direct success message.
-         toast.success(t("Download started"));
-       } catch (error) {
-         toast.error(t("Failed to start download"), {
-           description: error instanceof Error ? error.message : undefined,
-         });
-       }
+      try {
+        await document.download(contentType);
+        // Since the non-PDF download is also direct (handled by browser via content-disposition)
+        // we can show a direct success message.
+        toast.success(t("Download started"));
+      } catch (error) {
+        toast.error(t("Failed to start download"), {
+          description: error instanceof Error ? error.message : undefined,
+        });
+      }
     }
     onSubmit(); // Close the dialog for async exports
   };

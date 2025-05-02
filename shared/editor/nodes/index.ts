@@ -36,6 +36,7 @@ import Node from "./Node";
 import Notice from "./Notice";
 import OrderedList from "./OrderedList";
 import Paragraph from "./Paragraph";
+import Pdf from "./Pdf";
 import SimpleImage from "./SimpleImage";
 import Table from "./Table";
 import TableCell from "./TableCell";
@@ -43,7 +44,6 @@ import TableHeader from "./TableHeader";
 import TableRow from "./TableRow";
 import Text from "./Text";
 import Video from "./Video";
-import Pdf from "./Pdf";
 
 type Nodes = (typeof Node | typeof Mark | typeof Extension)[];
 

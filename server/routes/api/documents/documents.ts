@@ -12,7 +12,14 @@ import uniq from "lodash/uniq";
 import mime from "mime-types";
 import { Op, ScopeOptions, Sequelize, WhereOptions } from "sequelize";
 import { v4 as uuidv4 } from "uuid";
-import { StatusFilter, TeamPreference, UserRole } from "@shared/types";
+import {
+  StatusFilter,
+  TeamPreference,
+  UserRole,
+  FileOperationFormat, // Import FileOperationFormat
+  FileOperationState, // Import FileOperationState
+  FileOperationType, // Import FileOperationType
+} from "@shared/types";
 import { subtractDate } from "@shared/utils/date";
 import slugify from "@shared/utils/slugify";
 import documentCreator from "@server/commands/documentCreator";
@@ -70,19 +77,14 @@ import DocumentImportTask, {
 } from "@server/queues/tasks/DocumentImportTask";
 import EmptyTrashTask from "@server/queues/tasks/EmptyTrashTask";
 import ExportPDFTask from "@server/queues/tasks/ExportPDFTask"; // Import ExportPDFTask
+import PdfGenerator from "@server/services/PdfGenerator"; // Import the new service
 import FileStorage from "@server/storage/files";
 import { APIContext } from "@server/types";
-import {
-  FileOperationFormat, // Import FileOperationFormat
-  FileOperationState, // Import FileOperationState
-  FileOperationType, // Import FileOperationType
-} from "@shared/types";
 import { RateLimiterStrategy } from "@server/utils/RateLimiter";
 import ZipHelper from "@server/utils/ZipHelper";
+import { serializeFilename } from "@server/utils/fs"; // Import for filename generation
 import { getTeamFromContext } from "@server/utils/passport";
 import { assertPresent } from "@server/validation";
-import PdfGenerator from "@server/services/PdfGenerator"; // Import the new service
-import { serializeFilename } from "@server/utils/fs"; // Import for filename generation
 import pagination from "../middlewares/pagination";
 import * as T from "./schema";
 
@@ -720,20 +722,25 @@ router.post(
     authorize(user, "read", document);
 
     try {
-      const pdfBuffer = await PdfGenerator.generatePdfForDocument(document, team);
+      const pdfBuffer = await PdfGenerator.generatePdfForDocument(
+        document,
+        team
+      );
       const fileName = `${serializeFilename(document.titleWithDefault)}.pdf`;
 
       ctx.set("Content-Type", "application/pdf");
       ctx.set("Content-Disposition", `attachment; filename="${fileName}"`);
       ctx.body = pdfBuffer;
     } catch (error) {
-      Logger.error("Failed to generate direct PDF export", error, { documentId: id, userId: user.id });
+      Logger.error("Failed to generate direct PDF export", error, {
+        documentId: id,
+        userId: user.id,
+      });
       // Throw a generic error to the client, details are logged
       throw new Error("Failed to generate PDF export. Please try again later.");
     }
   }
 );
-
 
 router.post(
   "documents.export",
@@ -762,14 +769,16 @@ router.post(
         includeMermaid: true,
       });
     } else if (accept?.includes("application/pdf")) {
-       // NOTE: Direct PDF download is handled by documents.exportDirectPdf
-       // This route should no longer handle application/pdf requests directly.
-       // We keep the async task creation for collection/workspace exports elsewhere.
-       // For single document PDF export via this route, we could either:
-       // 1. Return an error telling the client to use the new endpoint.
-       // 2. Fallback to the async task (less ideal UX).
-       // For now, let's throw an error.
-       throw new InvalidRequestError("Direct PDF export should use the documents.exportDirectPdf endpoint.");
+      // NOTE: Direct PDF download is handled by documents.exportDirectPdf
+      // This route should no longer handle application/pdf requests directly.
+      // We keep the async task creation for collection/workspace exports elsewhere.
+      // For single document PDF export via this route, we could either:
+      // 1. Return an error telling the client to use the new endpoint.
+      // 2. Fallback to the async task (less ideal UX).
+      // For now, let's throw an error.
+      throw new InvalidRequestError(
+        "Direct PDF export should use the documents.exportDirectPdf endpoint."
+      );
     } else if (accept?.includes("text/markdown")) {
       contentType = "text/markdown";
       content = DocumentHelper.toMarkdown(document);

@@ -1,10 +1,10 @@
+import hljs from "highlight.js";
 import { JSDOM } from "jsdom";
+import katex from "katex";
 import compact from "lodash/compact";
 import flatten from "lodash/flatten";
 import isMatch from "lodash/isMatch";
 import uniq from "lodash/uniq";
-import katex from "katex";
-import hljs from "highlight.js";
 import { Node, DOMSerializer, Fragment } from "prosemirror-model";
 import * as React from "react";
 import { renderToString } from "react-dom/server";
@@ -91,20 +91,29 @@ export class ProsemirrorHelper {
    * @param data The ProsemirrorData object or string to parse.
    * @returns The content as a Prosemirror Node, or an empty node if input is invalid.
    */
-  static toProsemirror(data: ProsemirrorData | string | null | undefined): Node {
+  static toProsemirror(
+    data: ProsemirrorData | string | null | undefined
+  ): Node {
     if (typeof data === "string") {
       try {
         const parsed = parser.parse(data);
         return parsed || Node.fromJSON(schema, { type: "doc", content: [] }); // Return empty doc if parse fails
       } catch (error) {
-        Logger.error("Failed to parse markdown string in toProsemirror", error, { input: data });
+        Logger.error(
+          "Failed to parse markdown string in toProsemirror",
+          error,
+          { input: data }
+        );
         return Node.fromJSON(schema, { type: "doc", content: [] }); // Fallback to empty doc
       }
     }
 
-    if (!data || typeof data !== 'object' || !data.type) {
-       Logger.warn("Invalid or null data passed to toProsemirror, returning empty document.", { data });
-       return Node.fromJSON(schema, { type: "doc", content: [] }); // Return empty doc for null/invalid input
+    if (!data || typeof data !== "object" || !data.type) {
+      Logger.warn(
+        "Invalid or null data passed to toProsemirror, returning empty document.",
+        { data }
+      );
+      return Node.fromJSON(schema, { type: "doc", content: [] }); // Return empty doc for null/invalid input
     }
 
     try {
@@ -112,7 +121,9 @@ export class ProsemirrorHelper {
       return Node.fromJSON(schema, data);
     } catch (error) {
       // Log the error and the problematic data structure
-      Logger.error("Failed to create Node from JSON in toProsemirror", error, { data });
+      Logger.error("Failed to create Node from JSON in toProsemirror", error, {
+        data,
+      });
       // Return an empty document node as a fallback
       return Node.fromJSON(schema, { type: "doc", content: [] });
     }
@@ -536,7 +547,7 @@ export class ProsemirrorHelper {
       );
       target.appendChild(fragment);
     } else {
-       Logger.error("Target #content element not found for HTML serialization");
+      Logger.error("Target #content element not found for HTML serialization");
     }
 
     // Convert relative urls to absolute
@@ -663,109 +674,139 @@ export class ProsemirrorHelper {
     const target = doc.getElementById("content");
 
     if (!target) {
-      Logger.error("Target #content element not found for PDF HTML serialization");
+      Logger.error(
+        "Target #content element not found for PDF HTML serialization"
+      );
       return dom.serialize(); // Return what we have
     }
 
     // Custom serializer function to handle specific nodes
-    const serializeNode = (nodeToSerialize: Node, targetElement: HTMLElement) => {
-      if (nodeToSerialize.type.name === "math_inline" || nodeToSerialize.type.name === "math_block") {
+    const serializeNode = (
+      nodeToSerialize: Node,
+      targetElement: HTMLElement
+    ) => {
+      if (
+        nodeToSerialize.type.name === "math_inline" ||
+        nodeToSerialize.type.name === "math_block"
+      ) {
         try {
           const isBlock = nodeToSerialize.type.name === "math_block";
-          const renderedMath = katex.renderToString(nodeToSerialize.textContent || "", {
-            displayMode: isBlock,
-            throwOnError: false, // Don't throw errors, maybe log them
-            output: "html", // Use HTML+MathML for better compatibility
-          });
-          const span = doc.createElement(isBlock ? 'div' : 'span');
-          span.className = `math ${isBlock ? 'math-block' : 'math-inline'}`;
+          const renderedMath = katex.renderToString(
+            nodeToSerialize.textContent || "",
+            {
+              displayMode: isBlock,
+              throwOnError: false, // Don't throw errors, maybe log them
+              output: "html", // Use HTML+MathML for better compatibility
+            }
+          );
+          const span = doc.createElement(isBlock ? "div" : "span");
+          span.className = `math ${isBlock ? "math-block" : "math-inline"}`;
           span.innerHTML = renderedMath;
           targetElement.appendChild(span);
         } catch (e) {
-          Logger.warn("KaTeX rendering failed server-side", { error: e, latex: nodeToSerialize.textContent });
+          Logger.warn("KaTeX rendering failed server-side", {
+            error: e,
+            latex: nodeToSerialize.textContent,
+          });
           // Fallback: render the raw LaTeX source
-          const fallback = doc.createElement(nodeToSerialize.type.name === "math_block" ? 'div' : 'span');
+          const fallback = doc.createElement(
+            nodeToSerialize.type.name === "math_block" ? "div" : "span"
+          );
           fallback.className = `math-error ${nodeToSerialize.type.name}`;
           fallback.textContent = nodeToSerialize.textContent;
           targetElement.appendChild(fallback);
         }
       } else if (nodeToSerialize.type.name === "code_block") {
-        const language = nodeToSerialize.attrs.language || 'plaintext';
+        const language = nodeToSerialize.attrs.language || "plaintext";
         const code = nodeToSerialize.textContent || "";
         let highlightedCode;
         try {
-          if (language === 'mermaidjs') {
-             // Keep mermaid code raw for client-side rendering via script
-             highlightedCode = code;
+          if (language === "mermaidjs") {
+            // Keep mermaid code raw for client-side rendering via script
+            highlightedCode = code;
           } else if (hljs.getLanguage(language)) {
-            highlightedCode = hljs.highlight(code, { language, ignoreIllegals: true }).value;
+            highlightedCode = hljs.highlight(code, {
+              language,
+              ignoreIllegals: true,
+            }).value;
           } else {
             highlightedCode = hljs.highlightAuto(code).value; // Auto-detect if language not supported/found
           }
         } catch (e) {
-           Logger.warn("Highlight.js rendering failed server-side", { error: e, language, code });
-           highlightedCode = code; // Fallback to raw code
+          Logger.warn("Highlight.js rendering failed server-side", {
+            error: e,
+            language,
+            code,
+          });
+          highlightedCode = code; // Fallback to raw code
         }
 
-        const div = doc.createElement('div');
+        const div = doc.createElement("div");
         div.className = `code-block language-${language}`; // Add language class for potential CSS
         div.dataset.language = language;
-        const pre = doc.createElement('pre');
-        const codeEl = doc.createElement('code');
+        const pre = doc.createElement("pre");
+        const codeEl = doc.createElement("code");
         codeEl.innerHTML = highlightedCode; // Use innerHTML as highlight.js returns HTML
         codeEl.spellcheck = false;
         pre.appendChild(codeEl);
         div.appendChild(pre);
         targetElement.appendChild(div);
-
       } else if (nodeToSerialize.type.name === "embed") {
-         const href = nodeToSerialize.attrs.href || "#";
-         const placeholder = doc.createElement('div');
-         placeholder.className = 'embed-placeholder';
-         const link = doc.createElement('a');
-         link.href = href;
-         link.textContent = `[Embed: ${href}]`;
-         link.target = "_blank"; // Open in new tab
-         placeholder.appendChild(link);
-         // Optional: Add icon/thumbnail later
-         targetElement.appendChild(placeholder);
-
+        const href = nodeToSerialize.attrs.href || "#";
+        const placeholder = doc.createElement("div");
+        placeholder.className = "embed-placeholder";
+        const link = doc.createElement("a");
+        link.href = href;
+        link.textContent = `[Embed: ${href}]`;
+        link.target = "_blank"; // Open in new tab
+        placeholder.appendChild(link);
+        // Optional: Add icon/thumbnail later
+        targetElement.appendChild(placeholder);
       } else if (nodeToSerialize.isText) {
         // Handle text nodes directly
-        targetElement.appendChild(doc.createTextNode(nodeToSerialize.text || ""));
-      }
-       else {
+        targetElement.appendChild(
+          doc.createTextNode(nodeToSerialize.text || "")
+        );
+      } else {
         // Default serialization for other nodes using DOMSerializer
         const serializer = DOMSerializer.fromSchema(schema);
         try {
           // Create a fragment of the node's content if it's a block node,
           // otherwise, create a fragment containing the node itself (for inline nodes with marks)
           const fragment = nodeToSerialize.isBlock
-             ? nodeToSerialize.content
-             : Fragment.from(nodeToSerialize);
+            ? nodeToSerialize.content
+            : Fragment.from(nodeToSerialize);
 
           // Serialize the fragment into a temporary DocumentFragment
           const tempFragment = doc.createDocumentFragment();
           // Note: serializeFragment requires a Node or DocumentFragment as target.
           // @ts-expect-error - Bypassing persistent and misleading TS error
-          serializer.serializeFragment(fragment, { document: doc }, tempFragment);
+          serializer.serializeFragment(
+            fragment,
+            { document: doc },
+            tempFragment
+          );
 
           // Append the serialized content from the fragment
           // to the target element
           targetElement.appendChild(tempFragment);
         } catch (e) {
-           Logger.error(`Failed to serialize node type ${nodeToSerialize.type.name} for PDF`, e);
-           // Optionally render text content as fallback
-           if (nodeToSerialize.textContent) {
-              targetElement.appendChild(doc.createTextNode(nodeToSerialize.textContent));
-           }
+          Logger.error(
+            `Failed to serialize node type ${nodeToSerialize.type.name} for PDF`,
+            e
+          );
+          // Optionally render text content as fallback
+          if (nodeToSerialize.textContent) {
+            targetElement.appendChild(
+              doc.createTextNode(nodeToSerialize.textContent)
+            );
+          }
         }
       }
     };
 
     // Serialize the main document content using the custom function
-    node.content.forEach(childNode => serializeNode(childNode, target));
-
+    node.content.forEach((childNode) => serializeNode(childNode, target));
 
     // Convert relative urls to absolute (if base url provided)
     if (options?.baseUrl) {
@@ -786,13 +827,13 @@ export class ProsemirrorHelper {
 
       if (mermaidElements.length > 0) {
         // Modify the container for mermaid rendering
-        mermaidElements.forEach(el => {
+        mermaidElements.forEach((el) => {
           const parentPre = el.parentElement; // pre
           const parentDiv = parentPre?.parentElement; // div.code-block
           if (parentDiv && parentPre) {
-             parentDiv.innerHTML = el.innerHTML; // Move code content directly into div
-             parentDiv.classList.add("mermaid"); // Add mermaid class for the script to find
-             parentDiv.classList.remove("code-block", `language-mermaidjs`); // Remove code block classes
+            parentDiv.innerHTML = el.innerHTML; // Move code content directly into div
+            parentDiv.classList.add("mermaid"); // Add mermaid class for the script to find
+            parentDiv.classList.remove("code-block", `language-mermaidjs`); // Remove code block classes
           }
         });
 
@@ -816,18 +857,17 @@ export class ProsemirrorHelper {
         `;
         doc.body.appendChild(element);
       } else {
-         // Still need to signal ready even if no mermaid diagrams
-         const element = doc.createElement("script");
-         element.innerHTML = `window.status = "ready";`;
-         doc.body.appendChild(element);
+        // Still need to signal ready even if no mermaid diagrams
+        const element = doc.createElement("script");
+        element.innerHTML = `window.status = "ready";`;
+        doc.body.appendChild(element);
       }
     } else {
-       // If mermaid isn't included, signal ready immediately
-       const element = doc.createElement("script");
-       element.innerHTML = `window.status = "ready";`;
-       doc.body.appendChild(element);
+      // If mermaid isn't included, signal ready immediately
+      const element = doc.createElement("script");
+      element.innerHTML = `window.status = "ready";`;
+      doc.body.appendChild(element);
     }
-
 
     return dom.serialize();
   }

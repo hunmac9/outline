@@ -1,11 +1,11 @@
 import puppeteer, { Browser } from "puppeteer";
 import { ProsemirrorData } from "@shared/types";
-import { ProsemirrorHelper } from "@server/models/helpers/ProsemirrorHelper";
-import { trace } from "@server/logging/tracing";
-import Logger from "@server/logging/Logger";
-import { Document, Team } from "@server/models";
-// LogCategory is a type alias, not exported. Use string literal directly.
 import env from "@server/env";
+import Logger from "@server/logging/Logger";
+import { trace } from "@server/logging/tracing";
+import { Document, Team } from "@server/models";
+import { ProsemirrorHelper } from "@server/models/helpers/ProsemirrorHelper";
+// LogCategory is a type alias, not exported. Use string literal directly.
 
 @trace()
 class PdfGenerator {
@@ -25,7 +25,9 @@ class PdfGenerator {
         headless: true,
         // Use the installed Chromium in production (set via ENV in Dockerfile)
         // Access PUPPETEER_EXECUTABLE_PATH directly from process.env
-        executablePath: isProduction ? process.env.PUPPETEER_EXECUTABLE_PATH : undefined,
+        executablePath: isProduction
+          ? process.env.PUPPETEER_EXECUTABLE_PATH
+          : undefined,
         args: [
           "--no-sandbox",
           "--disable-setuid-sandbox",
@@ -35,7 +37,8 @@ class PdfGenerator {
 
       // Removed unused @ts-expect-error directive
       const node = ProsemirrorHelper.toProsemirror(document.content);
-      const html = ProsemirrorHelper.toPdfHtml(node as any, { // Cast to any to bypass TS error temporarily
+      const html = ProsemirrorHelper.toPdfHtml(node as any, {
+        // Cast to any to bypass TS error temporarily
         title: document.title,
         includeStyles: true,
         includeMermaid: true,
@@ -45,7 +48,10 @@ class PdfGenerator {
 
       const page = await browser.newPage();
       // Increased timeout for complex documents
-      await page.setContent(html, { waitUntil: "networkidle0", timeout: 90000 });
+      await page.setContent(html, {
+        waitUntil: "networkidle0",
+        timeout: 90000,
+      });
 
       try {
         // Wait for Mermaid diagrams to render if present
@@ -74,19 +80,25 @@ class PdfGenerator {
       browser = undefined; // Ensure it's marked as closed
 
       // Use "task" string literal directly
-      Logger.info("task", `Direct PDF generation successful for document: ${document.id}`);
+      Logger.info(
+        "task",
+        `Direct PDF generation successful for document: ${document.id}`
+      );
       return pdfBuffer;
-
     } catch (err) {
-       Logger.error("Direct PDF generation failed", err, { documentId: document.id });
-       throw err; // Re-throw the error to be handled by the API route
+      Logger.error("Direct PDF generation failed", err, {
+        documentId: document.id,
+      });
+      throw err; // Re-throw the error to be handled by the API route
     } finally {
       // Ensure browser is closed even if an error occurred mid-process
       if (browser) {
         try {
           await browser.close();
         } catch (closeError) {
-          Logger.error("Failed to close browser during cleanup", closeError, { documentId: document.id });
+          Logger.error("Failed to close browser during cleanup", closeError, {
+            documentId: document.id,
+          });
         }
       }
     }

@@ -441,8 +441,7 @@ export const downloadDocumentAsPDF = createAction({
   icon: <DownloadIcon />,
   iconInContextMenu: false,
   visible: ({ activeDocumentId, stores }) =>
-    !!activeDocumentId &&
-    stores.policies.abilities(activeDocumentId).download,
+    !!activeDocumentId && stores.policies.abilities(activeDocumentId).download,
   perform: ({ activeDocumentId, t, stores }) => {
     if (!activeDocumentId) {
       return;

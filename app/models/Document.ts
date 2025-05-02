@@ -694,7 +694,8 @@ export default class Document extends ArchivableModel implements Searchable {
 
   download = (contentType: ExportContentType) => {
     // If PDF is requested for a single document, use the new direct download endpoint
-    if (contentType === ExportContentType.Pdf) { // Corrected enum case
+    if (contentType === ExportContentType.Pdf) {
+      // Corrected enum case
       return client.post(
         `/documents.exportDirectPdf`,
         {

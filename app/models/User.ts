@@ -214,9 +214,8 @@ class User extends ParanoidModel implements Searchable {
    * @param key The UserPreference key to retrieve
    * @returns The value
    */
-  getPreference(
-    key: UserPreference.BackgroundColor
-  ): string | null | undefined;
+  getPreference(key: UserPreference.BackgroundColor): string | null | undefined;
+
   getPreference(key: UserPreference, defaultValue?: boolean): boolean;
   getPreference(
     key: UserPreference,
