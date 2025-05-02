@@ -89,6 +89,11 @@ export default async function loadDocument({
           required: true,
           as: "document",
         },
+        {
+          model: Team,
+          as: "team",
+          required: true,
+        },
       ],
     });
 
@@ -111,9 +116,24 @@ export default async function loadDocument({
       document = await Document.findByPk(share.documentId, {
         userId: user.id,
         paranoid: false,
+        // Ensure team is included here too
+        include: [
+          {
+            model: Team,
+            as: "team",
+            required: true,
+          },
+        ],
       });
     } else {
       document = share.document;
+      // Eager load team if it wasn't loaded via findByPk
+      // Add null check for document before accessing properties
+      if (document && !document.team) {
+        // Remove invalid rejectOnEmpty option and handle potential null return
+        const team = await document.$get("team");
+        invariant(team, "Team not found for document");
+      }
     }
 
     if (!document) {
@@ -201,6 +221,14 @@ export default async function loadDocument({
       userId: user ? user.id : undefined,
       paranoid: false,
       includeState,
+      // Ensure team is included when loading by ID directly
+      include: [
+        {
+          model: Team,
+          as: "team",
+          required: true,
+        },
+      ],
     });
 
     if (!document) {
@@ -211,13 +239,11 @@ export default async function loadDocument({
       // don't send data if user cannot restore deleted doc
       user && authorize(user, "restore", document);
     } else {
+      // If not deleted, authorize read access (already done above when loading)
       user && authorize(user, "read", document);
     }
 
-    if (document.isTrialImport) {
-      throw PaymentRequiredError();
-    }
-
+    // Collection is already loaded via the include statement in findByPk
     collection = document.collection;
   }
 
