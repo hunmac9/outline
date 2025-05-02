@@ -301,8 +301,8 @@ export default class DocumentsStore extends Store<Document> {
     const documentIds = this.backlinks.get(documentId) || [];
     return orderBy(
       compact(documentIds.map((id) => this.data.get(id))),
-      "updatedAt",
-      "desc"
+      "title",
+      "asc"
     );
   }
 

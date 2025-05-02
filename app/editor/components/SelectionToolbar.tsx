@@ -168,18 +168,16 @@ export default function SelectionToolbar(props: Props) {
   };
 
   const { isTemplate, rtl, canComment, canUpdate, ...rest } = props;
-  const { state: editorState } = view; // Rename state to avoid shadowing
-  const { selection } = editorState;
-  const isDividerSelection = isNodeActive(editorState.schema.nodes.hr)(
-    editorState
-  );
+  const { state } = view;
+  const { selection } = state;
 
   if ((readOnly && !canComment) || isDragging) {
     return null;
   }
 
-  const colIndex = getColumnIndex(editorState);
-  const rowIndex = getRowIndex(editorState);
+  const isDividerSelection = isNodeActive(state.schema.nodes.hr)(state);
+  const colIndex = getColumnIndex(state);
+  const rowIndex = getRowIndex(state);
   const isTableSelection = colIndex !== undefined && rowIndex !== undefined;
   const link = getMarkRange(selection.$from, editorState.schema.marks.link);
   const isImageSelection =

@@ -21,23 +21,23 @@ export default class FileOperationCreatedProcessor extends BaseProcessor {
     if (fileOperation.type === FileOperationType.Import) {
       switch (fileOperation.format) {
         case FileOperationFormat.MarkdownZip:
-          await ImportMarkdownZipTask.schedule({
+          await new ImportMarkdownZipTask().schedule({
             fileOperationId: event.modelId,
           });
           break;
         case FileOperationFormat.JSON:
-          await ImportJSONTask.schedule({
-             fileOperationId: event.modelId,
-           });
-           break;
-         default:
-       }
-     }
+          await new ImportJSONTask().schedule({
+            fileOperationId: event.modelId,
+          });
+          break;
+        default:
+      }
+    }
 
     if (fileOperation.type === FileOperationType.Export) {
       switch (fileOperation.format) {
         case FileOperationFormat.HTMLZip:
-          await ExportHTMLZipTask.schedule({
+          await new ExportHTMLZipTask().schedule({
             fileOperationId: event.modelId,
           });
           break;

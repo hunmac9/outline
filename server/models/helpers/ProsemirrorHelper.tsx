@@ -1,7 +1,7 @@
 import { JSDOM } from "jsdom";
 import compact from "lodash/compact";
 import flatten from "lodash/flatten";
-import isEqual from "lodash/isEqual";
+import isMatch from "lodash/isMatch";
 import uniq from "lodash/uniq";
 import katex from "katex";
 import hljs from "highlight.js";
@@ -18,7 +18,7 @@ import * as Y from "yjs";
 import EditorContainer from "@shared/editor/components/Styles";
 import GlobalStyles from "@shared/styles/globals";
 import light from "@shared/styles/theme";
-import { MentionType, ProsemirrorData } from "@shared/types";
+import { MentionType, ProsemirrorData, UnfurlResponse } from "@shared/types";
 import { attachmentRedirectRegex } from "@shared/utils/ProsemirrorHelper";
 import parseDocumentSlug from "@shared/utils/parseDocumentSlug";
 import { isRTL } from "@shared/utils/rtl";
@@ -51,6 +51,8 @@ export type MentionAttrs = {
   modelId: string;
   actorId: string | undefined;
   id: string;
+  href?: string;
+  unfurl?: UnfurlResponse[keyof UnfurlResponse];
 };
 
 @trace()
@@ -223,7 +225,7 @@ export class ProsemirrorHelper {
       node.descendants((childNode: Node) => {
         if (
           childNode.type.name === "mention" &&
-          isEqual(childNode.attrs, mention)
+          isMatch(childNode.attrs, mention)
         ) {
           foundMention = true;
           return false;
