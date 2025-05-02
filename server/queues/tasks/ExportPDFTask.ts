@@ -2,8 +2,11 @@ import os from "os";
 import path from "path";
 import archiver from "archiver";
 import fs from "fs-extra";
+import axios from "axios";
+import FormData from "form-data";
 import { v4 as uuidv4 } from "uuid";
 import { FileOperationState, NavigationNode } from "@shared/types"; // Removed FileOperationFormat
+import env from "@server/env"; // Import env
 import Logger from "@server/logging/Logger";
 import { trace } from "@server/logging/tracing";
 import {
@@ -158,9 +161,48 @@ export default class ExportPDFTask extends BaseTask<ExportPDFTaskPayload> {
           baseUrl: team.url,
         });
 
-        // TODO: Implement Gotenberg API call here
-        // Placeholder: use an empty buffer for now
-        const pdfBuffer = Buffer.from("");
+        let pdfBuffer: Buffer;
+        try {
+          const form = new FormData();
+          form.append("files", Buffer.from(html, "utf8"), {
+            filename: "index.html",
+            contentType: "text/html",
+          });
+          // Add Gotenberg options
+          form.append("marginTop", "1");
+          form.append("marginBottom", "1");
+          form.append("marginLeft", "1");
+          form.append("marginRight", "1");
+          form.append("paperWidth", "8.27"); // A4 width
+          form.append("paperHeight", "11.69"); // A4 height
+          form.append("printBackground", "true");
+          form.append("waitForExpression", "window.status === 'ready'");
+          form.append("waitTimeout", "30s");
+
+          // Remove explicit type parameter, rely on responseType
+          const response = await axios.post(
+            `${env.GOTENBERG_URL}/forms/chromium/convert/html`,
+            form,
+            {
+              headers: form.getHeaders(),
+              responseType: "arraybuffer",
+              timeout: 90000, // Increased timeout for potentially larger exports
+            }
+          );
+          // Correctly create Buffer from the ArrayBuffer response data
+          pdfBuffer = Buffer.from(response.data);
+        } catch (err) {
+          Logger.error(
+            `Gotenberg PDF generation failed for document: ${document.id}`,
+            err,
+            {
+              fileOperationId,
+              documentPath,
+            }
+          );
+          // Skip adding this document to the zip and continue with the next
+          continue;
+        }
 
         zip.append(pdfBuffer, { name: documentPath, date: document.updatedAt });
 

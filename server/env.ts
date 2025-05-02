@@ -656,6 +656,19 @@ export class Environment {
     return this.ENVIRONMENT === "test";
   }
 
+  /**
+   * The URL of the Gotenberg service used for PDF exports.
+   */
+  @IsNotEmpty({
+    message: `The GOTENBERG_URL environment variable must be set to enable PDF exports.`,
+  })
+  @IsUrl({
+    protocols: ["http", "https"],
+    require_protocol: true,
+    require_tld: false, // Allow service names like http://gotenberg
+  })
+  public GOTENBERG_URL = (environment.GOTENBERG_URL ?? "").replace(/\/$/, "");
+
   protected toOptionalString(value: string | undefined) {
     return value ? value : undefined;
   }

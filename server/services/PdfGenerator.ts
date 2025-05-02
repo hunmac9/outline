@@ -1,3 +1,5 @@
+import axios from "axios";
+import FormData from "form-data";
 import { ProsemirrorData } from "@shared/types";
 import env from "@server/env";
 import Logger from "@server/logging/Logger";
@@ -27,9 +29,37 @@ class PdfGenerator {
         baseUrl: team.url, // Use team URL for resolving relative links if any
       });
 
-      // TODO: Implement Gotenberg API call here
-      // Placeholder: return an empty buffer for now
-      const pdfBuffer = Buffer.from("");
+      const form = new FormData();
+      form.append("files", Buffer.from(html, "utf8"), {
+        filename: "index.html",
+        contentType: "text/html",
+      });
+      // Add Gotenberg options - refer to Gotenberg docs for specifics
+      form.append("marginTop", "1");
+      form.append("marginBottom", "1");
+      form.append("marginLeft", "1");
+      form.append("marginRight", "1");
+      form.append("paperWidth", "8.27"); // A4 width in inches
+      form.append("paperHeight", "11.69"); // A4 height in inches
+      form.append("printBackground", "true");
+      // Wait for Mermaid rendering signal (if mermaid.js adds window.status = 'ready')
+      form.append("waitForExpression", "window.status === 'ready'");
+      // Increase timeout for complex pages or slow rendering
+      form.append("waitTimeout", "30s");
+
+      // Remove explicit type parameter, rely on responseType
+      const response = await axios.post(
+        `${env.GOTENBERG_URL}/forms/chromium/convert/html`,
+        form,
+        {
+          headers: form.getHeaders(),
+          responseType: "arraybuffer", // Crucial for receiving binary data
+          // Increase overall request timeout if needed
+          timeout: 90000,
+        }
+      );
+
+      const pdfBuffer = Buffer.from(response.data);
 
       // Use "task" string literal directly
       Logger.info(
