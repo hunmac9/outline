@@ -17,21 +17,20 @@ WORKDIR $APP_PATH
 
 ENV NODE_ENV=production
 
+COPY --from=builder $APP_PATH/build ./build
+COPY --from=builder $APP_PATH/server ./server
+COPY --from=builder $APP_PATH/public ./public
+COPY --from=builder $APP_PATH/.sequelizerc ./.sequelizerc
+COPY --from=builder $APP_PATH/node_modules ./node_modules
+COPY --from=builder $APP_PATH/package.json ./package.json
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends wget \
   && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder $APP_PATH/package.json ./package.json
-COPY --from=builder $APP_PATH/yarn.lock ./yarn.lock
-
-RUN yarn install --frozen-lockfile --production=true --network-timeout 100000
-
-COPY --from=builder $APP_PATH/build ./build
-COPY --from=builder $APP_PATH/.sequelizerc ./.sequelizerc
-
 RUN addgroup --gid 1001 nodejs && \
   adduser --uid 1001 --ingroup nodejs nodejs && \
-  chown -R nodejs:nodejs $APP_PATH/node_modules $APP_PATH/build $APP_PATH/.sequelizerc $APP_PATH/package.json $APP_PATH/yarn.lock && \
+  chown -R nodejs:nodejs $APP_PATH && \
   mkdir -p /var/lib/outline && \
   chown -R nodejs:nodejs /var/lib/outline
 
