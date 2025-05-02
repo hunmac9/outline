@@ -54,6 +54,21 @@ services:
       - default
       - hunternet
 
+  gotenberg:
+    image: gotenberg/gotenberg:8 # Using version 8 as planned
+    expose:
+      - "3000" # Internal port for communication between services
+    networks:
+      - default # Ensure it's on the same network as outline
+    restart: unless-stopped
+    # Allow JS execution for Mermaid rendering etc.
+    command: ["gotenberg", "--chromium-disable-javascript=false"]
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 networks:
   default:
   hunternet:

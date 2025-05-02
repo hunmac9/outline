@@ -2,7 +2,6 @@ import os from "os";
 import path from "path";
 import archiver from "archiver";
 import fs from "fs-extra";
-import puppeteer, { Browser } from "puppeteer";
 import { v4 as uuidv4 } from "uuid";
 import { FileOperationState, NavigationNode } from "@shared/types"; // Removed FileOperationFormat
 import Logger from "@server/logging/Logger";
@@ -82,7 +81,6 @@ export default class ExportPDFTask extends BaseTask<ExportPDFTaskPayload> {
     const includeAttachments =
       fileOperation.options?.includeAttachments ?? true;
     const zip = archiver("zip");
-    let browser: Browser | undefined;
     const tmpDir = os.tmpdir();
     const tmpPath = path.join(tmpDir, `outline-export-${uuidv4()}.zip`);
 
@@ -139,16 +137,6 @@ export default class ExportPDFTask extends BaseTask<ExportPDFTaskPayload> {
         fileOperationId,
       });
 
-      // Launch Puppeteer once
-      browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-        ],
-      });
-
       const pathMap = createPdfPathMap(collectionsToMap); // Use local helper for PDF paths
 
       for (const document of documents) {
@@ -170,36 +158,9 @@ export default class ExportPDFTask extends BaseTask<ExportPDFTaskPayload> {
           baseUrl: team.url,
         });
 
-        const page = await browser.newPage();
-        await page.setContent(html, {
-          waitUntil: "networkidle0",
-          timeout: 60000,
-        });
-
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await page.waitForFunction(() => (window as any).status === "ready", {
-            timeout: 30000,
-          });
-        } catch (err) {
-          Logger.warn(
-            `Timeout or error waiting for Mermaid rendering signal for document ${document.id}`,
-            {
-              error: err,
-              fileOperationId,
-            }
-          );
-        }
-
-        const pdfBuffer = Buffer.from(
-          await page.pdf({
-            format: "A4",
-            printBackground: true,
-            margin: { top: "1in", right: "1in", bottom: "1in", left: "1in" },
-            timeout: 60000,
-          })
-        );
-        await page.close();
+        // TODO: Implement Gotenberg API call here
+        // Placeholder: use an empty buffer for now
+        const pdfBuffer = Buffer.from("");
 
         zip.append(pdfBuffer, { name: documentPath, date: document.updatedAt });
 
@@ -235,9 +196,6 @@ export default class ExportPDFTask extends BaseTask<ExportPDFTaskPayload> {
           }
         }
       }
-
-      await browser.close();
-      browser = undefined;
 
       zip.finalize();
 
@@ -284,16 +242,13 @@ export default class ExportPDFTask extends BaseTask<ExportPDFTaskPayload> {
           );
         });
     } finally {
-      // Ensure browser is closed on error too
-      if (browser) {
-        await browser.close();
-      }
       // Clean up temporary file and mark promise as intentionally unhandled
       void fs
         .remove(tmpPath)
         .catch((err) =>
           Logger.error(
-            `Failed to remove temp export file ${tmpPath}: ${err.message}`
+            `Failed to remove temp export file ${tmpPath}`,
+            err // Pass the error object
           )
         );
     }

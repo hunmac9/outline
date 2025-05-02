@@ -18,9 +18,8 @@ WORKDIR $APP_PATH
 ENV NODE_ENV=production
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends wget chromium \
+  && apt-get install -y --no-install-recommends wget \
   && rm -rf /var/lib/apt/lists/*
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 COPY --from=builder $APP_PATH/package.json ./package.json
 COPY --from=builder $APP_PATH/yarn.lock ./yarn.lock
