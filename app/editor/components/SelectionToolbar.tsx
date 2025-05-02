@@ -179,7 +179,7 @@ export default function SelectionToolbar(props: Props) {
   const colIndex = getColumnIndex(state);
   const rowIndex = getRowIndex(state);
   const isTableSelection = colIndex !== undefined && rowIndex !== undefined;
-  const link = getMarkRange(selection.$from, editorState.schema.marks.link);
+  const link = getMarkRange(selection.$from, state.schema.marks.link);
   const isImageSelection =
     selection instanceof NodeSelection && selection.node.type.name === "image";
   const isAttachmentSelection =
@@ -188,39 +188,34 @@ export default function SelectionToolbar(props: Props) {
   const isPdfSelection = // Check for PDF node selection
     selection instanceof NodeSelection &&
     selection.node.type.name === "pdf_document";
-  const isCodeSelection = isInCode(editorState, { onlyBlock: true });
-  const isNoticeSelection = isInNotice(editorState);
+  const isCodeSelection = isInCode(state, { onlyBlock: true });
+  const isNoticeSelection = isInNotice(state);
 
   let items: MenuItem[] = [];
 
   if (isCodeSelection && selection.empty) {
-    items = getCodeMenuItems(editorState, readOnly, dictionary);
+    items = getCodeMenuItems(state, readOnly, dictionary);
   } else if (isTableSelection) {
-    items = getTableMenuItems(editorState, dictionary);
+    items = getTableMenuItems(state, dictionary);
   } else if (colIndex !== undefined) {
-    items = getTableColMenuItems(editorState, colIndex, rtl, dictionary);
+    items = getTableColMenuItems(state, colIndex, rtl, dictionary);
   } else if (rowIndex !== undefined) {
-    items = getTableRowMenuItems(editorState, rowIndex, dictionary);
+    items = getTableRowMenuItems(state, rowIndex, dictionary);
   } else if (isImageSelection) {
-    items = readOnly ? [] : getImageMenuItems(editorState, dictionary);
+    items = readOnly ? [] : getImageMenuItems(state, dictionary);
   } else if (isAttachmentSelection) {
-    items = readOnly ? [] : getAttachmentMenuItems(editorState, dictionary);
+    items = readOnly ? [] : getAttachmentMenuItems(state, dictionary);
   } else if (isPdfSelection) {
     // Add case for PDF selection
-    items = readOnly ? [] : getPdfMenuItems(editorState, dictionary);
+    items = readOnly ? [] : getPdfMenuItems(state, dictionary);
   } else if (isDividerSelection) {
-    items = getDividerMenuItems(editorState, dictionary);
+    items = getDividerMenuItems(state, dictionary);
   } else if (readOnly) {
-    items = getReadOnlyMenuItems(editorState, !!canUpdate, dictionary);
+    items = getReadOnlyMenuItems(state, !!canUpdate, dictionary);
   } else if (isNoticeSelection && selection.empty) {
-    items = getNoticeMenuItems(editorState, readOnly, dictionary);
+    items = getNoticeMenuItems(state, readOnly, dictionary);
   } else {
-    items = getFormattingMenuItems(
-      editorState,
-      isTemplate,
-      isMobile,
-      dictionary
-    );
+    items = getFormattingMenuItems(state, isTemplate, isMobile, dictionary);
   }
 
   // Some extensions may be disabled, remove corresponding items
