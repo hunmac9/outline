@@ -24,6 +24,7 @@ type Result = {
   document: Document;
   share?: Share;
   collection?: Collection | null;
+  team: Team;
 };
 
 export default async function loadDocument({
@@ -159,10 +160,14 @@ export default async function loadDocument({
         }
       }
 
+      const teamToReturn = document.team || share?.team;
+      invariant(teamToReturn, "Team not found for document or share");
+
       return {
         document,
         share,
         collection,
+        team: teamToReturn,
       };
     }
 
@@ -247,9 +252,13 @@ export default async function loadDocument({
     collection = document.collection;
   }
 
+  const loadedTeam = document.team || share?.team;
+  invariant(loadedTeam, "Team could not be loaded with the document or share.");
+
   return {
     document,
     share,
     collection,
+    team: loadedTeam,
   };
 }
