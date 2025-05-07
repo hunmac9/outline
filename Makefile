@@ -1,5 +1,5 @@
 up:
-	docker compose up -d redis postgres
+	docker compose up -d redis postgres goteneberg
 	yarn install-local-ssl
 	yarn install --pure-lockfile
 	yarn dev:watch
@@ -15,7 +15,7 @@ test:
 	yarn test
 
 watch:
-	docker compose up -d redis postgres gotenberg
+	docker compose up -d redis postgres
 	NODE_ENV=test yarn sequelize db:drop
 	NODE_ENV=test yarn sequelize db:create
 	NODE_ENV=test yarn sequelize db:migrate
