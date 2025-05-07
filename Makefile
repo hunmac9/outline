@@ -15,7 +15,7 @@ test:
 	yarn test
 
 watch:
-	docker compose up -d redis postgres
+	docker compose up -d redis postgres gotenberg
 	NODE_ENV=test yarn sequelize db:drop
 	NODE_ENV=test yarn sequelize db:create
 	NODE_ENV=test yarn sequelize db:migrate
