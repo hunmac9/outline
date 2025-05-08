@@ -70,7 +70,23 @@ function ExportDialog({ collection, document, onSubmit }: Props) {
       try {
         // Use the correct enum case ExportContentType.Pdf
         const response = await document.download(ExportContentType.Pdf);
+        
+        // Log response details
+        console.log("PDF Export Response Status:", response.status);
+        console.log("PDF Export Response Headers:", Object.fromEntries(response.headers.entries()));
+
         const blob = await response.blob(); // Get the blob from the response
+
+        // Log blob details
+        console.log("PDF Export Blob Size:", blob.size);
+        console.log("PDF Export Blob Type:", blob.type);
+
+        if (blob.size === 0) {
+          toast.error(t("Failed to download PDF"), {
+            description: t("Received an empty response from the server."),
+          });
+          return;
+        }
 
         // Create a URL for the blob
         const url = window.URL.createObjectURL(blob);
