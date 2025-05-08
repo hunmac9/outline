@@ -442,16 +442,60 @@ export const downloadDocumentAsPDF = createAction({
   iconInContextMenu: false,
   visible: ({ activeDocumentId, stores }) =>
     !!activeDocumentId && stores.policies.abilities(activeDocumentId).download,
-  perform: ({ activeDocumentId, t, stores }) => {
+  perform: async ({ activeDocumentId, t, stores }) => { // Make perform async
     if (!activeDocumentId) {
       return;
     }
 
-    const id = toast.loading(`${t("Exporting")}…`);
     const document = stores.documents.get(activeDocumentId);
-    return document
-      ?.download(ExportContentType.Pdf)
-      .finally(() => id && toast.dismiss(id));
+    if (!document) {
+      toast.error(t("Document not found"));
+      return;
+    }
+
+    const loadingToastId = toast.loading(`${t("Exporting")}…`);
+
+    try {
+      const response = await document.download(ExportContentType.Pdf);
+
+      if (!response.ok) {
+        throw new Error(`Failed to download PDF: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+
+      if (blob.size === 0) {
+        throw new Error(t("Received an empty response from the server."));
+      }
+
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      // Use window.document for DOM manipulation
+      const a = window.document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      // Create a filename - use slugify if available or simple replace
+      const slugify = (text: string) => text.toString().toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]+/g, "").replace(/--+/g, "-").replace(/^-+/, "").replace(/-+$/, "");
+      const filename = `${slugify(document.titleWithDefault)}.pdf`;
+      a.download = filename;
+
+      // Append the link to the body, click it, and remove it
+      window.document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+
+      toast.success(t("PDF downloaded"));
+    } catch (error) {
+      console.error("Error during PDF export action:", error);
+      toast.error(t("Failed to download PDF"), {
+        description: error instanceof Error ? error.message : t("An unknown error occurred."),
+      });
+    } finally {
+      if (loadingToastId) {
+        toast.dismiss(loadingToastId);
+      }
+    }
   },
 });
 
