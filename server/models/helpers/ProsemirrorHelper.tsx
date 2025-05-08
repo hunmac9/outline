@@ -638,9 +638,56 @@ export class ProsemirrorHelper {
     let html = "";
     let styleTags = "";
 
+    const pdfSpecificCss = `
+      body {
+        font-size: 10pt; /* Smaller base font for PDF */
+        line-height: 1.4;
+      }
+      h1 { font-size: 18pt; line-height: 1.2; margin-bottom: 0.8em; }
+      h2 { font-size: 16pt; line-height: 1.2; margin-bottom: 0.7em; }
+      h3 { font-size: 14pt; line-height: 1.2; margin-bottom: 0.6em; }
+      h4 { font-size: 12pt; line-height: 1.2; margin-bottom: 0.5em; }
+      h5 { font-size: 11pt; line-height: 1.2; margin-bottom: 0.5em; }
+      h6 { font-size: 10pt; line-height: 1.2; margin-bottom: 0.5em; }
+      p, li {
+        white-space: pre-wrap !important; /* Preserve newlines from editor */
+        margin-bottom: 0.5em; /* Consistent spacing */
+      }
+      ul, ol {
+        padding-left: 20px; /* Indent lists */
+        margin-bottom: 1em;
+      }
+      li {
+        list-style-position: outside;
+        padding-left: 5px; /* Space between bullet and text */
+      }
+      /* Ensure paragraphs within list items don't add extra margins */
+      li p {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+      /* Fix for bullet points taking their own line - ensure li content flows */
+      li > :first-child {
+        /* This might need adjustment based on actual HTML structure of list items */
+        /* display: inline-block; could be an option if direct children are simple text nodes or inline elements */
+      }
+      .ProseMirror table {
+        font-size: 9pt; /* Smaller font for tables */
+      }
+      .ProseMirror pre code {
+        font-size: 9pt; /* Smaller font for code blocks */
+        white-space: pre-wrap !important; /* Ensure code block lines wrap */
+      }
+      .math-inline, .math-block {
+        font-size: 10pt; /* Adjust math font size if needed */
+      }
+    `;
+
     // TODO: Inject KaTeX and highlight.js CSS into styleTags
+    // For now, KaTeX and highlight.js CSS are assumed to be handled by their respective libraries' JS if not directly injected.
     // styleTags += `<style>${katexCss}</style>`;
     // styleTags += `<style>${hljsCss}</style>`;
+    styleTags += `<style type="text/css">${pdfSpecificCss}</style>`;
 
     const Centered = options?.centered
       ? styled.article`
@@ -836,27 +883,49 @@ export class ProsemirrorHelper {
 
       for (const el of elements) {
         let urlAttr = "";
-        if ("href" in el && typeof el.href === "string") {
-          urlAttr = "href";
-        } else if ("src" in el && typeof el.src === "string") {
-          urlAttr = "src";
+        // Use type guards to safely check for properties
+        if (el instanceof HTMLAnchorElement || el instanceof HTMLAreaElement || el instanceof HTMLLinkElement) {
+          if (typeof el.href === "string") {
+            urlAttr = "href";
+          }
+        } else if (el instanceof HTMLImageElement || el instanceof HTMLScriptElement || el instanceof HTMLIFrameElement || el instanceof HTMLMediaElement) {
+           if (typeof el.src === "string") {
+             urlAttr = "src";
+           }
         }
 
         if (urlAttr) {
-          const currentUrl = el[urlAttr as "href" | "src"] as string;
-          // Check if it's a root-relative URL (starts with '/')
-          // or specifically our attachment redirect URL pattern
-          if (currentUrl.startsWith("/") || currentUrl.includes("/api/attachments.redirect?id=")) {
-            try {
-              // Ensure it's treated as a path relative to the baseUrl
-              const fullUrl = new URL(currentUrl.startsWith("/") ? currentUrl : currentUrl.substring(currentUrl.indexOf("/api/")), options.baseUrl).toString();
-              el[urlAttr as "href" | "src"] = fullUrl;
-            } catch (e) {
-              Logger.warn("Failed to construct absolute URL for PDF", {
-                currentUrl,
-                baseUrl: options.baseUrl,
-                error: e,
-              });
+          let currentUrlValue = "";
+          let newUrlValue = "";
+
+          // Access properties safely based on confirmed type
+          if (urlAttr === "href" && (el instanceof HTMLAnchorElement || el instanceof HTMLAreaElement || el instanceof HTMLLinkElement)) {
+            currentUrlValue = el.href;
+            if (currentUrlValue.startsWith("/") || currentUrlValue.includes("/api/attachments.redirect?id=")) {
+              try {
+                newUrlValue = new URL(currentUrlValue.startsWith("/") ? currentUrlValue : currentUrlValue.substring(currentUrlValue.indexOf("/api/")), options.baseUrl).toString();
+                el.href = newUrlValue; // Set property directly on typed element
+              } catch (e) {
+                 Logger.warn("Failed to construct absolute URL for PDF (href)", {
+                   currentUrl: currentUrlValue,
+                   baseUrl: options.baseUrl,
+                   error: e,
+                 });
+              }
+            }
+          } else if (urlAttr === "src" && (el instanceof HTMLImageElement || el instanceof HTMLScriptElement || el instanceof HTMLIFrameElement || el instanceof HTMLMediaElement)) {
+            currentUrlValue = el.src;
+             if (currentUrlValue.startsWith("/") || currentUrlValue.includes("/api/attachments.redirect?id=")) {
+              try {
+                newUrlValue = new URL(currentUrlValue.startsWith("/") ? currentUrlValue : currentUrlValue.substring(currentUrlValue.indexOf("/api/")), options.baseUrl).toString();
+                el.src = newUrlValue; // Set property directly on typed element
+              } catch (e) {
+                 Logger.warn("Failed to construct absolute URL for PDF (src)", {
+                   currentUrl: currentUrlValue,
+                   baseUrl: options.baseUrl,
+                   error: e,
+                 });
+              }
             }
           }
         }

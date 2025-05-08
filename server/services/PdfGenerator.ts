@@ -35,10 +35,10 @@ class PdfGenerator {
         contentType: "text/html",
       });
       // Add Gotenberg options - refer to Gotenberg docs for specifics
-      form.append("marginTop", "1");
-      form.append("marginBottom", "1");
-      form.append("marginLeft", "1");
-      form.append("marginRight", "1");
+      form.append("marginTop", "0.5");
+      form.append("marginBottom", "0.5");
+      form.append("marginLeft", "0.5");
+      form.append("marginRight", "0.5");
       form.append("paperWidth", "8.27"); // A4 width in inches
       form.append("paperHeight", "11.69"); // A4 height in inches
       form.append("printBackground", "true");
