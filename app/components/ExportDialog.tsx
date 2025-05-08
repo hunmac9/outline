@@ -65,6 +65,8 @@ function ExportDialog({ collection, document, onSubmit }: Props) {
       .replace(/-+$/, ""); // Trim - from end of text
 
   const handleSubmit = async () => {
+    console.log("[ExportDialog] handleSubmit called. Document:", document ? document.id : "null", "Format:", format);
+
     // Direct PDF download for single document
     if (document && format === FileOperationFormat.PDF) {
       console.log("[ExportDialog] Attempting direct PDF download for document:", document.id);
@@ -89,7 +91,7 @@ function ExportDialog({ collection, document, onSubmit }: Props) {
           toast.error(t("Failed to download PDF"), {
             description: t("Received an empty response from the server."),
           });
-          // onSubmit(); // Consider if dialog should close here
+          // Do not call onSubmit here, let the dialog stay open to show the error.
           return;
         }
 
@@ -113,13 +115,13 @@ function ExportDialog({ collection, document, onSubmit }: Props) {
         console.log("[ExportDialog] Download initiated.");
 
         toast.success(t("PDF downloaded"));
-        onSubmit(); // Close the dialog
+        onSubmit(); // Close the dialog after successful download
       } catch (error) {
         console.error("[ExportDialog] Error during PDF export:", error);
         toast.error(t("Failed to download PDF"), {
           description: error instanceof Error ? error.message : t("An unknown error occurred."),
         });
-        // onSubmit(); // Consider if dialog should close on error
+        // Do not call onSubmit here on error, let the dialog stay open.
       }
       return; // Stop execution here for direct download
     }
