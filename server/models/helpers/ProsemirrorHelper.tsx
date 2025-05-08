@@ -539,7 +539,6 @@ export class ProsemirrorHelper {
 
     if (target) {
       const fragment = doc.createDocumentFragment();
-      // @ts-expect-error - Bypassing persistent and misleading TS error
       DOMSerializer.fromSchema(schema).serializeFragment(
         node.content,
         { document: doc },
@@ -552,10 +551,33 @@ export class ProsemirrorHelper {
 
     // Convert relative urls to absolute
     if (options?.baseUrl) {
-      const elements = doc.querySelectorAll("a[href]");
+      const selectors = ["a[href]", "img[src]", "video[src]", "audio[src]", "iframe[src]", "script[src]"];
+      const elements = doc.querySelectorAll(selectors.join(", "));
+
       for (const el of elements) {
-        if ("href" in el && (el.href as string).startsWith("/")) {
-          el.href = new URL(el.href as string, options.baseUrl).toString();
+        if (el instanceof HTMLAnchorElement || el instanceof HTMLAreaElement) {
+          if (el.href && (el.href.startsWith("/") || el.href.includes("/api/attachments.redirect?id="))) {
+            try {
+              const fullUrl = new URL(el.href.startsWith("/") ? el.href : el.href.substring(el.href.indexOf("/api/")), options.baseUrl).toString();
+              el.href = fullUrl;
+            } catch (e) {
+              Logger.warn("Failed to construct absolute URL for HTML (href)", { currentUrl: el.href, baseUrl: options.baseUrl, error: e });
+            }
+          }
+        } else if (
+          el instanceof HTMLImageElement ||
+          el instanceof HTMLScriptElement ||
+          el instanceof HTMLIFrameElement ||
+          el instanceof HTMLMediaElement // Catches <audio>, <video>
+        ) {
+          if (el.src && (el.src.startsWith("/") || el.src.includes("/api/attachments.redirect?id="))) {
+            try {
+              const fullUrl = new URL(el.src.startsWith("/") ? el.src : el.src.substring(el.src.indexOf("/api/")), options.baseUrl).toString();
+              el.src = fullUrl;
+            } catch (e) {
+              Logger.warn("Failed to construct absolute URL for HTML (src)", { currentUrl: el.src, baseUrl: options.baseUrl, error: e });
+            }
+          }
         }
       }
     }
@@ -780,7 +802,6 @@ export class ProsemirrorHelper {
           // Serialize the fragment into a temporary DocumentFragment
           const tempFragment = doc.createDocumentFragment();
           // Note: serializeFragment requires a Node or DocumentFragment as target.
-          // @ts-expect-error - Bypassing persistent and misleading TS error
           serializer.serializeFragment(
             fragment,
             { document: doc },
@@ -810,10 +831,34 @@ export class ProsemirrorHelper {
 
     // Convert relative urls to absolute (if base url provided)
     if (options?.baseUrl) {
-      const elements = doc.querySelectorAll("a[href]");
+      const selectors = ["a[href]", "img[src]", "video[src]", "audio[src]"];
+      const elements = doc.querySelectorAll(selectors.join(", "));
+
       for (const el of elements) {
-        if ("href" in el && (el.href as string).startsWith("/")) {
-          el.href = new URL(el.href as string, options.baseUrl).toString();
+        let urlAttr = "";
+        if ("href" in el && typeof el.href === "string") {
+          urlAttr = "href";
+        } else if ("src" in el && typeof el.src === "string") {
+          urlAttr = "src";
+        }
+
+        if (urlAttr) {
+          const currentUrl = el[urlAttr as "href" | "src"] as string;
+          // Check if it's a root-relative URL (starts with '/')
+          // or specifically our attachment redirect URL pattern
+          if (currentUrl.startsWith("/") || currentUrl.includes("/api/attachments.redirect?id=")) {
+            try {
+              // Ensure it's treated as a path relative to the baseUrl
+              const fullUrl = new URL(currentUrl.startsWith("/") ? currentUrl : currentUrl.substring(currentUrl.indexOf("/api/")), options.baseUrl).toString();
+              el[urlAttr as "href" | "src"] = fullUrl;
+            } catch (e) {
+              Logger.warn("Failed to construct absolute URL for PDF", {
+                currentUrl,
+                baseUrl: options.baseUrl,
+                error: e,
+              });
+            }
+          }
         }
       }
     }

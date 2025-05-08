@@ -21,4 +21,5 @@ data/*
 *.key
 *.cert
 *.sql
+docker-compose-old.yml
 =

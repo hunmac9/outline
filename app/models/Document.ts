@@ -702,10 +702,7 @@ export default class Document extends ArchivableModel implements Searchable {
           id: this.id,
         },
         {
-          // responseType: "blob", // Remove invalid option - handle blob in caller
-          // The actual download trigger (creating a link, clicking it)
-          // will likely need to be handled where this `download` method is called,
-          // as this method just returns the promise for the response.
+          rawResponse: true,
         }
       );
     } else {

@@ -30,6 +30,7 @@ interface FetchOptions {
   retry?: boolean;
   credentials?: "omit" | "same-origin" | "include";
   headers?: Record<string, string>;
+  rawResponse?: boolean;
 }
 
 const fetchWithRetry = retry(fetch);
@@ -148,6 +149,9 @@ class ApiClient {
     } else if (success && response.status === 204) {
       return undefined as T;
     } else if (success) {
+      if (options.rawResponse) {
+        return response as T;
+      }
       return response.json();
     }
 

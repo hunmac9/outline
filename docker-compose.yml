@@ -2,8 +2,8 @@ services:
   redis:
     image: redis
     env_file: ./docker.env
-    expose:
-      - "6379"
+    ports: # Changed from expose to ports
+      - "6379:6379"
     volumes:
       - ./redis.conf:/redis.conf
     command: ["redis-server", "/redis.conf"]
@@ -18,58 +18,67 @@ services:
   postgres:
     image: postgres
     env_file: ./docker.env
-    expose:
-      - "5432"
+    ports: # Changed from expose to ports
+      - "5432:5432"
     volumes:
       - ./database-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-d", "outline", "-U", "user"]
+      test: [
+          "CMD",
+          "pg_isready",
+          "-d",
+          "${POSTGRES_DB:-outline}",
+          "-U",
+          "${POSTGRES_USER:-user}",
+        ] # Ensure these vars are available or hardcode
       interval: 30s
       timeout: 20s
       retries: 3
     environment:
-      POSTGRES_USER: 'user'
-      POSTGRES_PASSWORD: 'pass'
-      POSTGRES_DB: 'outline'
+      # Ensure these match your actual credentials needed by the app
+      # They might be in docker.env or your main .env
+      POSTGRES_USER: "${POSTGRES_USER:-user}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-pass}"
+      POSTGRES_DB: "${POSTGRES_DB:-outline}"
     networks:
       - default
 
-  outline:
-    build:        # This uses your Dockerfile in the current dir
-      context: .
-      dockerfile: Dockerfile
-    image: outline-personalmods2
-    depends_on:
-      - postgres
-      - redis
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env
-      - docker.env
-    volumes:
-      - ./storage-data:/var/lib/outline/data
-    restart: unless-stopped
-    networks:
-      - default
-      - hunternet
+  # The 'outline' service is commented out because you will run it locally
+  # outline:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   image: outline-personalmods2
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   ports:
+  #     - "3000:3000" # This port will be used by your local backend
+  #   env_file:
+  #     - .env
+  #     - docker.env
+  #   volumes:
+  #     - ./storage-data:/var/lib/outline/data
+  #   restart: unless-stopped
+  #   networks:
+  #     - default
+  #     - hunternet
 
   gotenberg:
-    image: gotenberg/gotenberg:8 # Using version 8 as planned
-    expose:
-      - "3000" # Internal port for communication between services
+    image: gotenberg/gotenberg:8
+    ports: # Changed from expose and mapped to a different host port
+      - "3003:3000" # Host port 3003 maps to container port 3000
     networks:
       - default # Ensure it's on the same network as outline
     restart: unless-stopped
-    # Allow JS execution for Mermaid rendering etc.
     command: ["gotenberg", "--chromium-disable-javascript=false"]
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"] # Tests internal port
       interval: 30s
       timeout: 10s
       retries: 3
 
 networks:
   default:
-  hunternet:
+  hunternet: # This network might not be strictly necessary if 'outline' service is not running in Docker
     external: true
