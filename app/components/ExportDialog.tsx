@@ -67,27 +67,33 @@ function ExportDialog({ collection, document, onSubmit }: Props) {
   const handleSubmit = async () => {
     // Direct PDF download for single document
     if (document && format === FileOperationFormat.PDF) {
+      console.log("[ExportDialog] Attempting direct PDF download for document:", document.id);
       try {
         // Use the correct enum case ExportContentType.Pdf
+        console.log("[ExportDialog] Calling document.download(ExportContentType.Pdf)...");
         const response = await document.download(ExportContentType.Pdf);
         
         // Log response details
-        console.log("PDF Export Response Status:", response.status);
-        console.log("PDF Export Response Headers:", Object.fromEntries(response.headers.entries()));
+        console.log("[ExportDialog] PDF Export Response Status:", response.status);
+        console.log("[ExportDialog] PDF Export Response Headers:", Object.fromEntries(response.headers.entries()));
 
+        console.log("[ExportDialog] Calling response.blob()...");
         const blob = await response.blob(); // Get the blob from the response
 
         // Log blob details
-        console.log("PDF Export Blob Size:", blob.size);
-        console.log("PDF Export Blob Type:", blob.type);
+        console.log("[ExportDialog] PDF Export Blob Size:", blob.size);
+        console.log("[ExportDialog] PDF Export Blob Type:", blob.type);
 
         if (blob.size === 0) {
+          console.warn("[ExportDialog] PDF blob size is 0.");
           toast.error(t("Failed to download PDF"), {
             description: t("Received an empty response from the server."),
           });
+          // onSubmit(); // Consider if dialog should close here
           return;
         }
 
+        console.log("[ExportDialog] Creating blob URL and download link...");
         // Create a URL for the blob
         const url = window.URL.createObjectURL(blob);
         // Use window.document for DOM manipulation
@@ -99,17 +105,21 @@ function ExportDialog({ collection, document, onSubmit }: Props) {
         a.download = filename;
 
         // Append the link to the body, click it, and remove it
+        console.log("[ExportDialog] Appending link, clicking, and revoking URL...");
         window.document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         a.remove();
+        console.log("[ExportDialog] Download initiated.");
 
         toast.success(t("PDF downloaded"));
         onSubmit(); // Close the dialog
       } catch (error) {
+        console.error("[ExportDialog] Error during PDF export:", error);
         toast.error(t("Failed to download PDF"), {
-          description: error instanceof Error ? error.message : undefined,
+          description: error instanceof Error ? error.message : t("An unknown error occurred."),
         });
+        // onSubmit(); // Consider if dialog should close on error
       }
       return; // Stop execution here for direct download
     }
