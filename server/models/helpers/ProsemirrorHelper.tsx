@@ -687,50 +687,52 @@ export class ProsemirrorHelper {
       const elements = doc.querySelectorAll(selectors.join(", "));
 
       for (const el of elements) {
-        if (el instanceof HTMLAnchorElement || el instanceof HTMLAreaElement) {
+        if (el instanceof dom.window.HTMLAnchorElement || el instanceof dom.window.HTMLAreaElement) {
+          const anchorEl = el as HTMLAnchorElement;
           if (
-            el.href &&
-            (el.href.startsWith("/") ||
-              el.href.includes("/api/attachments.redirect?id="))
+            anchorEl.href &&
+            (anchorEl.href.startsWith("/") ||
+              anchorEl.href.includes("/api/attachments.redirect?id="))
           ) {
             try {
               const fullUrl = new URL(
-                el.href.startsWith("/")
-                  ? el.href
-                  : el.href.substring(el.href.indexOf("/api/")),
+                anchorEl.href.startsWith("/")
+                  ? anchorEl.href
+                  : anchorEl.href.substring(anchorEl.href.indexOf("/api/")),
                 options.baseUrl
               ).toString();
-              el.href = fullUrl;
+              anchorEl.href = fullUrl;
             } catch (e) {
               Logger.warn("Failed to construct absolute URL for HTML (href)", {
-                currentUrl: el.href,
+                currentUrl: anchorEl.href,
                 baseUrl: options.baseUrl,
                 error: e,
               });
             }
           }
         } else if (
-          el instanceof HTMLImageElement ||
-          el instanceof HTMLScriptElement ||
-          el instanceof HTMLIFrameElement ||
-          el instanceof HTMLMediaElement // Catches <audio>, <video>
+          el instanceof dom.window.HTMLImageElement ||
+          el instanceof dom.window.HTMLScriptElement ||
+          el instanceof dom.window.HTMLIFrameElement ||
+          el instanceof dom.window.HTMLMediaElement // Catches <audio>, <video>
         ) {
+          const mediaEl = el as HTMLImageElement | HTMLScriptElement | HTMLIFrameElement | HTMLMediaElement;
           if (
-            el.src &&
-            (el.src.startsWith("/") ||
-              el.src.includes("/api/attachments.redirect?id="))
+            mediaEl.src &&
+            (mediaEl.src.startsWith("/") ||
+              mediaEl.src.includes("/api/attachments.redirect?id="))
           ) {
             try {
               const fullUrl = new URL(
-                el.src.startsWith("/")
-                  ? el.src
-                  : el.src.substring(el.src.indexOf("/api/")),
+                mediaEl.src.startsWith("/")
+                  ? mediaEl.src
+                  : mediaEl.src.substring(mediaEl.src.indexOf("/api/")),
                 options.baseUrl
               ).toString();
-              el.src = fullUrl;
+              mediaEl.src = fullUrl;
             } catch (e) {
               Logger.warn("Failed to construct absolute URL for HTML (src)", {
-                currentUrl: el.src,
+                currentUrl: mediaEl.src,
                 baseUrl: options.baseUrl,
                 error: e,
               });
