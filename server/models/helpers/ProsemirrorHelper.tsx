@@ -796,62 +796,61 @@ export class ProsemirrorHelper {
 
     const pdfSpecificCss = `
       body {
-        font-size: 10pt; /* Smaller base font for PDF */
-        line-height: 1.4;
+        font-size: 10pt; /* Base font for PDF */
+        line-height: 1.4; /* Base line-height for PDF */
       }
-      .ProseMirror h1 { font-size: 18pt; line-height: 1.2; margin-bottom: 0.8em; }
-      .ProseMirror h2 { font-size: 16pt; line-height: 1.2; margin-bottom: 0.7em; }
-      .ProseMirror h3 { font-size: 14pt; line-height: 1.2; margin-bottom: 0.6em; }
-      .ProseMirror h4 { font-size: 12pt; line-height: 1.2; margin-bottom: 0.5em; }
-      .ProseMirror h5 { font-size: 11pt; line-height: 1.2; margin-bottom: 0.5em; }
-      .ProseMirror h6 { font-size: 10pt; line-height: 1.2; margin-bottom: 0.5em; }
-      .ProseMirror p {
-        white-space: pre-wrap !important; /* Preserve newlines from editor */
-        margin-bottom: 0.5em; /* Consistent spacing */
-      }
-      .ProseMirror li {
-         margin-bottom: 0.5em; /* Consistent spacing for li itself */
-      }
+      /* PDF-specific font sizes for headings. Margins and line-heights should primarily come from EditorContainer styles. */
+      .ProseMirror h1 { font-size: 18pt !important; }
+      .ProseMirror h2 { font-size: 16pt !important; }
+      .ProseMirror h3 { font-size: 14pt !important; }
+      .ProseMirror h4 { font-size: 12pt !important; }
+      .ProseMirror h5 { font-size: 11pt !important; }
+      .ProseMirror h6 { font-size: 10pt !important; }
+
+      /* Let EditorContainer styles primarily handle paragraph and list styling. */
+      /* Avoid broad white-space overrides here as they conflict. */
+      
+      /* Minimal list styling if EditorContainer doesn't cover it adequately for PDF. */
+      /* These might be re-introduced if lists are still problematic after removing broader overrides. */
+      /*
       .ProseMirror ul, .ProseMirror ol {
-        padding-left: 20px; /* Indent lists */
+        padding-left: 20px; 
         margin-bottom: 1em;
       }
       .ProseMirror li {
         list-style-position: outside;
-        padding-left: 5px; /* Space between bullet and text */
+        padding-left: 5px; 
+        margin-bottom: 0.5em; 
       }
-      /* Ensure paragraphs within list items don't add excessive margins and attempt to make first line flow */
       .ProseMirror li p {
         margin-top: 0;
-        margin-bottom: 0.25em; /* Small margin for multiple paragraphs in one li */
+        margin-bottom: 0.25em; 
       }
       .ProseMirror li p:last-child {
         margin-bottom: 0;
       }
-      /* Attempt to fix bullet points taking their own line */
-      .ProseMirror li > p:first-child,
-      .ProseMirror li > :first-child:not(ul):not(ol):not(table):not(pre):not(blockquote) {
-        /* display: inline;  More aggressive, might break complex list items */
-        /* display: inline-block; A bit safer */
-        /* For now, let's rely on removing pre-wrap from li and proper p margins */
-      }
-      .ProseMirror table {
-        font-size: 9pt; /* Smaller font for tables */
-      }
-      .ProseMirror pre { /* Style the pre tag directly for themes */
-        font-size: 9pt; /* Smaller font for code blocks */
-      }
-      /* Removed white-space: pre-wrap from pre code, hljs theme should handle it */
+      */
+
+      /* Code block font size can be adjusted here if needed, but let hljs theme and EditorContainer handle most styling. */
+      /* Example: .ProseMirror .code-block pre code.hljs { font-size: 9pt !important; } */
+      
       .math-inline, .math-block {
         font-size: 10pt; /* Adjust math font size if needed */
       }
     `;
 
+    // Order: 
+    // 1. Styled-components base styles (will be collected by sheet.collectStyles and appended later)
+    // 2. Highlight.js theme (for code syntax colors)
+    // 3. pdfSpecificCss (for minimal PDF overrides like base font size and heading point sizes)
+    
+    let collectedStyleTags = ""; // Will hold styled-components styles
+
     // Inject KaTeX CSS if needed (example)
     // styleTags += `<style type="text/css">${katexCss}</style>`;
 
-    // Inject highlight.js CSS
-    styleTags += `<style type="text/css">${hljsGithubCss}</style>`;
+    // Start with highlight.js and our specific PDF CSS
+    styleTags = `<style type="text/css">${hljsGithubCss}</style>`;
     styleTags += `<style type="text/css">${pdfSpecificCss}</style>`;
 
     const Centered = options?.centered
@@ -894,12 +893,15 @@ export class ProsemirrorHelper {
           </ThemeProvider>
         )
       );
-      styleTags += sheet.getStyleTags(); // Append styled-components styles
+      collectedStyleTags = sheet.getStyleTags(); // Capture styled-components styles
     } catch (error) {
       Logger.error("Failed to render styles for PDF HTML conversion", error);
     } finally {
       sheet.seal();
     }
+
+    // Append styled-components styles last so they form the base and can be specifically overridden
+    styleTags += collectedStyleTags;
 
     const dom = new JSDOM(
       `<!DOCTYPE html><html><head><meta charset="utf-8">${styleTags}</head><body>${html}</body></html>`
