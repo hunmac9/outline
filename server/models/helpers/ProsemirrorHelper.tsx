@@ -15,6 +15,129 @@ import * as Y from "yjs";
 // Assuming CSS files are available relative to this file or configured via build tool
 // import katexCss from 'katex/dist/katex.min.css';
 // import hljsCss from 'highlight.js/styles/default.css'; // Choose a theme
+
+// Content of highlight.js/styles/github.css
+const hljsGithubCss = `
+pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub
+  Description: Light theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-light
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #24292e;
+  background: #ffffff
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #d73a49
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #6f42c1
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #005cc5
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #032f62
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #e36209
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #6a737d
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #22863a
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #24292e
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #005cc5;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #735c0f
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #24292e;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #24292e;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #22863a;
+  background-color: #f0fff4
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #b31d28;
+  background-color: #ffeef0
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+`;
+
 import EditorContainer from "@shared/editor/components/Styles";
 import GlobalStyles from "@shared/styles/globals";
 import light from "@shared/styles/theme";
@@ -546,7 +669,7 @@ export class ProsemirrorHelper {
       );
       target.appendChild(fragment);
     } else {
-      Logger.error("Target #content element not found for HTML serialization");
+      Logger.error("Target #content element not found for HTML serialization", new Error("Target #content element not found for HTML serialization"));
     }
 
     // Convert relative urls to absolute
@@ -676,50 +799,59 @@ export class ProsemirrorHelper {
         font-size: 10pt; /* Smaller base font for PDF */
         line-height: 1.4;
       }
-      h1 { font-size: 18pt; line-height: 1.2; margin-bottom: 0.8em; }
-      h2 { font-size: 16pt; line-height: 1.2; margin-bottom: 0.7em; }
-      h3 { font-size: 14pt; line-height: 1.2; margin-bottom: 0.6em; }
-      h4 { font-size: 12pt; line-height: 1.2; margin-bottom: 0.5em; }
-      h5 { font-size: 11pt; line-height: 1.2; margin-bottom: 0.5em; }
-      h6 { font-size: 10pt; line-height: 1.2; margin-bottom: 0.5em; }
-      p, li {
+      .ProseMirror h1 { font-size: 18pt; line-height: 1.2; margin-bottom: 0.8em; }
+      .ProseMirror h2 { font-size: 16pt; line-height: 1.2; margin-bottom: 0.7em; }
+      .ProseMirror h3 { font-size: 14pt; line-height: 1.2; margin-bottom: 0.6em; }
+      .ProseMirror h4 { font-size: 12pt; line-height: 1.2; margin-bottom: 0.5em; }
+      .ProseMirror h5 { font-size: 11pt; line-height: 1.2; margin-bottom: 0.5em; }
+      .ProseMirror h6 { font-size: 10pt; line-height: 1.2; margin-bottom: 0.5em; }
+      .ProseMirror p {
         white-space: pre-wrap !important; /* Preserve newlines from editor */
         margin-bottom: 0.5em; /* Consistent spacing */
       }
-      ul, ol {
+      .ProseMirror li {
+         margin-bottom: 0.5em; /* Consistent spacing for li itself */
+      }
+      .ProseMirror ul, .ProseMirror ol {
         padding-left: 20px; /* Indent lists */
         margin-bottom: 1em;
       }
-      li {
+      .ProseMirror li {
         list-style-position: outside;
         padding-left: 5px; /* Space between bullet and text */
       }
-      /* Ensure paragraphs within list items don't add extra margins */
-      li p {
+      /* Ensure paragraphs within list items don't add excessive margins and attempt to make first line flow */
+      .ProseMirror li p {
         margin-top: 0;
+        margin-bottom: 0.25em; /* Small margin for multiple paragraphs in one li */
+      }
+      .ProseMirror li p:last-child {
         margin-bottom: 0;
       }
-      /* Fix for bullet points taking their own line - ensure li content flows */
-      li > :first-child {
-        /* This might need adjustment based on actual HTML structure of list items */
-        /* display: inline-block; could be an option if direct children are simple text nodes or inline elements */
+      /* Attempt to fix bullet points taking their own line */
+      .ProseMirror li > p:first-child,
+      .ProseMirror li > :first-child:not(ul):not(ol):not(table):not(pre):not(blockquote) {
+        /* display: inline;  More aggressive, might break complex list items */
+        /* display: inline-block; A bit safer */
+        /* For now, let's rely on removing pre-wrap from li and proper p margins */
       }
       .ProseMirror table {
         font-size: 9pt; /* Smaller font for tables */
       }
-      .ProseMirror pre code {
+      .ProseMirror pre { /* Style the pre tag directly for themes */
         font-size: 9pt; /* Smaller font for code blocks */
-        white-space: pre-wrap !important; /* Ensure code block lines wrap */
       }
+      /* Removed white-space: pre-wrap from pre code, hljs theme should handle it */
       .math-inline, .math-block {
         font-size: 10pt; /* Adjust math font size if needed */
       }
     `;
 
-    // TODO: Inject KaTeX and highlight.js CSS into styleTags
-    // For now, KaTeX and highlight.js CSS are assumed to be handled by their respective libraries' JS if not directly injected.
-    // styleTags += `<style>${katexCss}</style>`;
-    // styleTags += `<style>${hljsCss}</style>`;
+    // Inject KaTeX CSS if needed (example)
+    // styleTags += `<style type="text/css">${katexCss}</style>`;
+
+    // Inject highlight.js CSS
+    styleTags += `<style type="text/css">${hljsGithubCss}</style>`;
     styleTags += `<style type="text/css">${pdfSpecificCss}</style>`;
 
     const Centered = options?.centered
@@ -777,7 +909,7 @@ export class ProsemirrorHelper {
 
     if (!target) {
       Logger.error(
-        "Target #content element not found for PDF HTML serialization"
+        "Target #content element not found for PDF HTML serialization", new Error("Target #content element not found for PDF HTML serialization")
       );
       return dom.serialize(); // Return what we have
     }
