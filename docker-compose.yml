@@ -43,6 +43,8 @@ services:
     networks:
       - default
 
+
+
   gotenberg:
     image: gotenberg/gotenberg:8
     ports: # Changed from expose and mapped to a different host port

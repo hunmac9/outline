@@ -191,6 +191,8 @@ export default () =>
       alias: {
         "~": path.resolve(__dirname, "./app"),
         "@shared": path.resolve(__dirname, "./shared"),
+        // Add alias for react-dom/client to react-dom for React 17 compatibility with tldraw
+        "react-dom/client": "react-dom",
       },
     },
     build: {
