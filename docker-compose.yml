@@ -43,26 +43,6 @@ services:
     networks:
       - default
 
-  outline:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: outline-personalmods2
-    depends_on:
-      - postgres
-      - redis
-    ports:
-      - "3000:3000" # This port will be used by your local backend
-    env_file:
-      - .env
-      - docker.env
-    volumes:
-      - ./storage-data:/var/lib/outline/data
-    restart: unless-stopped
-    networks:
-      - default
-      - hunternet
-
   gotenberg:
     image: gotenberg/gotenberg:8
     ports: # Changed from expose and mapped to a different host port
