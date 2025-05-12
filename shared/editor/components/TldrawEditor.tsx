@@ -1,30 +1,33 @@
-import React, { createContext, useContext, useState } from 'react'
-import {
-	ArrangeMenuSubmenu,
-	ClipboardMenuGroup,
-	ConversionsMenuGroup,
-	ConvertToBookmarkMenuItem,
-	ConvertToEmbedMenuItem,
-	DefaultContextMenu,
-	EditLinkMenuItem,
-	Editor,
-	FitFrameToContentMenuItem,
-	GroupMenuItem,
-	RemoveFrameMenuItem,
-	ReorderMenuSubmenu,
-	SelectAllMenuItem,
-	TLUiContextMenuProps,
-	Tldraw,
-	TldrawUiMenuGroup,
-	ToggleAutoSizeMenuItem,
-	ToggleLockMenuItem,
-	UngroupMenuItem,
-	useEditor,
-	useValue,
-} from 'tldraw'
+import React, { createContext, useContext, useState, Suspense, lazy } from 'react'
+
+// Dynamically import tldraw components
+const Tldraw = lazy(() => import('tldraw').then(module => ({ default: module.Tldraw })))
+const ArrangeMenuSubmenu = lazy(() => import('tldraw').then(module => ({ default: module.ArrangeMenuSubmenu })))
+const ClipboardMenuGroup = lazy(() => import('tldraw').then(module => ({ default: module.ClipboardMenuGroup })))
+const ConversionsMenuGroup = lazy(() => import('tldraw').then(module => ({ default: module.ConversionsMenuGroup })))
+const ConvertToBookmarkMenuItem = lazy(() => import('tldraw').then(module => ({ default: module.ConvertToBookmarkMenuItem })))
+const ConvertToEmbedMenuItem = lazy(() => import('tldraw').then(module => ({ default: module.ConvertToEmbedMenuItem })))
+const DefaultContextMenu = lazy(() => import('tldraw').then(module => ({ default: module.DefaultContextMenu })))
+const EditLinkMenuItem = lazy(() => import('tldraw').then(module => ({ default: module.EditLinkMenuItem })))
+const FitFrameToContentMenuItem = lazy(() => import('tldraw').then(module => ({ default: module.FitFrameToContentMenuItem })))
+const GroupMenuItem = lazy(() => import('tldraw').then(module => ({ default: module.GroupMenuItem })))
+const RemoveFrameMenuItem = lazy(() => import('tldraw').then(module => ({ default: module.RemoveFrameMenuItem })))
+const ReorderMenuSubmenu = lazy(() => import('tldraw').then(module => ({ default: module.ReorderMenuSubmenu })))
+const SelectAllMenuItem = lazy(() => import('tldraw').then(module => ({ default: module.SelectAllMenuItem })))
+const TldrawUiMenuGroup = lazy(() => import('tldraw').then(module => ({ default: module.TldrawUiMenuGroup })))
+const ToggleAutoSizeMenuItem = lazy(() => import('tldraw').then(module => ({ default: module.ToggleAutoSizeMenuItem })))
+const ToggleLockMenuItem = lazy(() => import('tldraw').then(module => ({ default: module.ToggleLockMenuItem })))
+const UngroupMenuItem = lazy(() => import('tldraw').then(module => ({ default: module.UngroupMenuItem })))
+
+// Import types directly as they don't affect runtime bundling for the server
+import type { Editor, TLUiContextMenuProps } from 'tldraw'
+
+// CSS import might still be an issue if webpack/bundler for server tries to process it.
+// If this file is purely for client-side, it's fine.
+// If shared code is processed by a Node environment without CSS handling, this could fail.
+// For now, let's assume CSS imports are handled or ignored server-side.
 import 'tldraw/tldraw.css'
 
-// There's a guide at the bottom of this page!
 
 // [1]
 const focusedEditorContext = createContext(
@@ -35,6 +38,19 @@ const focusedEditorContext = createContext(
 )
 
 // [2]
+// Ensure useEditor and useValue are only called client-side if they cause issues.
+// For now, assuming they are hooks that will run in the client components.
+let useEditorHook: any = () => null;
+let useValueHook: any = () => null;
+
+if (typeof window !== 'undefined') {
+  import('tldraw').then(tldrawModule => {
+    useEditorHook = tldrawModule.useEditor;
+    useValueHook = tldrawModule.useValue;
+  });
+}
+
+
 function blurEditor(editor: Editor) {
 	editor.blur({ blurContainer: false })
 	editor.selectNone()
@@ -45,26 +61,28 @@ export default function InlineBehaviorExample() {
 	const [focusedEditor, setFocusedEditor] = useState<Editor | null>(null)
 
 	return (
-		<focusedEditorContext.Provider value={{ focusedEditor, setFocusedEditor }}>
-			<div
-				style={{
-					margin: 20,
-					display: 'flex',
-					flexDirection: 'column',
-					gap: 20,
-				}}
-				// [3]
-				onPointerDown={() => {
-					if (!focusedEditor) return
-					blurEditor(focusedEditor)
-					setFocusedEditor(null)
-				}}
-			>
-				<InlineBlock persistenceKey="block-a" />
-				<InlineBlock persistenceKey="block-b" />
-				<InlineBlock persistenceKey="block-c" />
-			</div>
-		</focusedEditorContext.Provider>
+		<Suspense fallback={<div>Loading tldraw...</div>}>
+			<focusedEditorContext.Provider value={{ focusedEditor, setFocusedEditor }}>
+				<div
+					style={{
+						margin: 20,
+						display: 'flex',
+						flexDirection: 'column',
+						gap: 20,
+					}}
+					// [3]
+					onPointerDown={() => {
+						if (!focusedEditor) return
+						blurEditor(focusedEditor)
+						setFocusedEditor(null)
+					}}
+				>
+					<InlineBlock persistenceKey="block-a" />
+					<InlineBlock persistenceKey="block-b" />
+					<InlineBlock persistenceKey="block-c" />
+				</div>
+			</focusedEditorContext.Provider>
+		</Suspense>
 	)
 }
 
@@ -99,7 +117,7 @@ function InlineBlock({ persistenceKey }: { persistenceKey: string }) {
 					ContextMenu: CustomContextMenu,
 				}}
 				// [7]
-				onMount={(editor) => {
+				onMount={(editor: Editor) => { // Explicitly type editor here
 					setEditor(editor)
 					editor.setCurrentTool('hand')
 					editor.user.updateUserPreferences({ edgeScrollSpeed: 0 })
@@ -111,13 +129,17 @@ function InlineBlock({ persistenceKey }: { persistenceKey: string }) {
 
 // [8]
 function CustomContextMenu(props: TLUiContextMenuProps) {
-	const editor = useEditor()
+	const editor = useEditorHook() // Use the dynamically loaded hook
 
-	const selectToolActive = useValue(
+	// Ensure editor is not null before calling methods on it
+	const selectToolActive = useValueHook && editor ? useValueHook(
 		'isSelectToolActive',
 		() => editor.getCurrentToolId() === 'select',
 		[editor]
-	)
+	) : false;
+
+
+	if (!editor) return null; // Or some placeholder
 
 	return (
 		<DefaultContextMenu {...props}>
