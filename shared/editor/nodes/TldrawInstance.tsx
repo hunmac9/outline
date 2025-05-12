@@ -2,7 +2,7 @@ import { NodeSpec, NodeType, Node as ProsemirrorNode } from "prosemirror-model";
 import { Command } from "prosemirror-state";
 import * as React from "react";
 // Assuming InlineBehaviorExample is the default export of TldrawEditor.tsx
-import InlineBehaviorExample from "~/components/TldrawEditor";
+import InlineBehaviorExample from "../components/TldrawEditor";
 import { MarkdownSerializerState } from "../lib/markdown/serializer";
 import { ComponentProps } from "../types";
 import Node from "./Node";
