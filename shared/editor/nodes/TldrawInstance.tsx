@@ -1,17 +1,30 @@
 import { NodeSpec, NodeType, Node as ProsemirrorNode } from "prosemirror-model";
 import { Command } from "prosemirror-state";
 import * as React from "react";
-// Assuming InlineBehaviorExample is the default export of TldrawEditor.tsx
-// import InlineBehaviorExample from "../components/TldrawEditor"; // This line is now removed
+const { lazy, Suspense } = React;
+// Note: The static import of TldrawEditor is removed.
+// It will be dynamically imported via React.lazy.
 import { MarkdownSerializerState } from "../lib/markdown/serializer";
-import { ComponentProps } from "../types";
+import { ComponentProps } from "../types"; // ComponentProps from Prosemirror
 import Node from "./Node";
 
-// Forward declaration for the component type, actual component loaded client-side
-let LoadedInlineBehaviorExample: React.ComponentType<any> | undefined;
+// Dynamically import the TldrawEditor component for client-side rendering
+const LazyTldrawEditor = lazy(() => import('../components/TldrawEditor'));
+
+// Wrapper component to provide Suspense fallback
+const TldrawInstanceWrapper = (props: ComponentProps) => {
+  // props here are from Prosemirror (node, view, getPos, etc.)
+  // InlineBehaviorExample (default export of TldrawEditor) currently doesn't take these.
+  // If it needed them, they could be passed down: <LazyTldrawEditor {...props} />
+  return (
+    <Suspense fallback={<div>Loading tldraw canvas...</div>}>
+      <LazyTldrawEditor />
+    </Suspense>
+  );
+};
 
 export default class TldrawInstance extends Node {
-  private _cachedComponent: React.ComponentType<ComponentProps> | undefined;
+  // private _cachedComponent: React.ComponentType<ComponentProps> | undefined; // This is now removed
 
   get name() {
     return "tldraw_instance";
@@ -47,26 +60,8 @@ export default class TldrawInstance extends Node {
     if (typeof window === 'undefined') {
       return undefined; // On server, no component is provided
     }
-
-    if (!this._cachedComponent) {
-      if (!LoadedInlineBehaviorExample) {
-        // Dynamically require the component only on the client side
-        LoadedInlineBehaviorExample = require('../components/TldrawEditor').default;
-      }
-      
-      // The actual component function that Prosemirror will use for rendering
-      this._cachedComponent = (props: ComponentProps) => {
-        // props from ComponentView (node, view, getPos, etc.) are available here
-        // LoadedInlineBehaviorExample (InlineBehaviorExample) doesn't use them directly currently
-        if (!LoadedInlineBehaviorExample) {
-          // This should ideally not happen if the component getter is called on client
-          // and require works, but it's a good safeguard.
-          return null; 
-        }
-        return <LoadedInlineBehaviorExample />;
-      };
-    }
-    return this._cachedComponent;
+    // Return the wrapper component that handles Suspense
+    return TldrawInstanceWrapper;
   }
 
   commands({ type }: { type: NodeType }) {
