@@ -1,5 +1,7 @@
 // eslint-disable-next-line import/no-unresolved
 import "vite/modulepreload-polyfill";
+// Import the shim for React 17 compatibility with useSyncExternalStore
+import 'use-sync-external-store/shim';
 import { LazyMotion } from "framer-motion";
 import { KBarProvider } from "kbar";
 import { Provider } from "mobx-react";

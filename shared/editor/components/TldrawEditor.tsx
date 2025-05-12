@@ -18,6 +18,8 @@ const TldrawUiMenuGroup = lazy(() => import('tldraw').then(module => ({ default:
 const ToggleAutoSizeMenuItem = lazy(() => import('tldraw').then(module => ({ default: module.ToggleAutoSizeMenuItem })))
 const ToggleLockMenuItem = lazy(() => import('tldraw').then(module => ({ default: module.ToggleLockMenuItem })))
 const UngroupMenuItem = lazy(() => import('tldraw').then(module => ({ default: module.UngroupMenuItem })))
+const useEditor = lazy(() => import('tldraw').then(module => ({ default: module.useEditor })))
+const useValue = lazy(() => import('tldraw').then(module => ({ default: module.useValue })))
 
 // Import types directly as they don't affect runtime bundling for the server
 import type { Editor, TLUiContextMenuProps } from 'tldraw'
@@ -38,18 +40,7 @@ const focusedEditorContext = createContext(
 )
 
 // [2]
-// Ensure useEditor and useValue are only called client-side if they cause issues.
-// For now, assuming they are hooks that will run in the client components.
-let useEditorHook: any = () => null;
-let useValueHook: any = () => null;
-
-if (typeof window !== 'undefined') {
-  import('tldraw').then(tldrawModule => {
-    useEditorHook = tldrawModule.useEditor;
-    useValueHook = tldrawModule.useValue;
-  });
-}
-
+// Removed the conditional loading for hooks, importing them directly now.
 
 function blurEditor(editor: Editor) {
 	editor.blur({ blurContainer: false })
@@ -135,17 +126,16 @@ function InlineBlock({ persistenceKey }: { persistenceKey: string }) {
 
 // [8]
 function CustomContextMenu(props: TLUiContextMenuProps) {
-	const editor = useEditorHook() // Use the dynamically loaded hook
-
-	// Ensure editor is not null before calling methods on it
-	const selectToolActive = useValueHook && editor ? useValueHook(
+	// Use hooks directly now
+	const editor = useEditor() 
+	const selectToolActive = useValue(
 		'isSelectToolActive',
 		() => editor.getCurrentToolId() === 'select',
 		[editor]
-	) : false;
+	)
 
-
-	if (!editor) return null; // Or some placeholder
+	// No need for editor null check here as useEditor should provide it
+	// if (!editor) return null; 
 
 	return (
 		<DefaultContextMenu {...props}>
