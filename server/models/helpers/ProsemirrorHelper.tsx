@@ -1022,7 +1022,27 @@ export class ProsemirrorHelper {
         } else {
           Logger.warn("Attachment not found for ID in image src", { attachmentId, src: originalSrc });
         }
+      } else {
+        // Non-attachment image, src remains as is unless it needs baseUrl adjustment (handled by toHTML)
+        // Logger.info("Image is not an attachment or pattern not matched", { src: originalSrc });
       }
+
+      // Apply width and height attributes as inline styles to give them precedence for PDF rendering.
+      // This should be done for all images, whether they were attachments or external.
+      const widthAttr = img.getAttribute("width");
+      const heightAttr = img.getAttribute("height");
+
+      if (widthAttr && heightAttr) {
+        img.style.width = `${widthAttr}px`;
+        img.style.height = `${heightAttr}px`;
+      } else if (widthAttr) {
+        img.style.width = `${widthAttr}px`;
+        img.style.height = "auto"; // Maintain aspect ratio if only width is specified
+      } else if (heightAttr) {
+        img.style.height = `${heightAttr}px`;
+        img.style.width = "auto"; // Maintain aspect ratio if only height is specified
+      }
+      // If neither width nor height attributes are present, existing CSS or default rendering will apply.
     }
 
     // Inject PDF-specific font size for the body if desired,
