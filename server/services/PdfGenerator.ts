@@ -21,7 +21,7 @@ class PdfGenerator {
     try {
       // Removed unused @ts-expect-error directive
       const node = ProsemirrorHelper.toProsemirror(document.content);
-      const html = ProsemirrorHelper.toPdfHtml(node as any, {
+      const { html, assets } = await ProsemirrorHelper.toPdfHtml(node as any, {
         // Cast to any to bypass TS error temporarily
         title: document.title,
         includeStyles: true,
@@ -37,6 +37,15 @@ class PdfGenerator {
         filename: "index.html",
         contentType: "text/html",
       });
+
+      // Append assets to the form
+      for (const asset of assets) {
+        form.append("files", asset.data, {
+          filename: asset.filename,
+          contentType: asset.contentType,
+        });
+      }
+
       // Add Gotenberg options - refer to Gotenberg docs for specifics
       form.append("marginTop", "0.5");
       form.append("marginBottom", "0.5");

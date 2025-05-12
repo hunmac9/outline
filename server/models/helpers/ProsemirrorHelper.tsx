@@ -1,4 +1,5 @@
 import hljs from "highlight.js";
+import axios from "axios";
 import { JSDOM } from "jsdom";
 import katex from "katex";
 import fs from "fs"; // Changed from fs/promises
@@ -169,6 +170,17 @@ export type HTMLOptions = {
 
 // Define options specific to PDF HTML generation if needed
 export type PdfHtmlOptions = HTMLOptions;
+
+export type PdfAsset = {
+  filename: string;
+  data: Buffer;
+  contentType: string;
+};
+
+export type PdfHtmlWithAssets = {
+  html: string;
+  assets: PdfAsset[];
+};
 
 export type MentionAttrs = {
   type: MentionType;
@@ -919,7 +931,10 @@ export class ProsemirrorHelper {
    * @param options Options for the HTML output
    * @returns The content as a HTML string suitable for PDF conversion
    */
-  static toPdfHtml(node: Node, options?: PdfHtmlOptions): string {
+  static async toPdfHtml(
+    node: Node,
+    options?: PdfHtmlOptions
+  ): Promise<PdfHtmlWithAssets> {
     // Generate base HTML using the toHTML method, which is known to work well for direct download.
     // Pass through relevant options.
     const baseHtml = ProsemirrorHelper.toHTML(node, {
@@ -932,9 +947,83 @@ export class ProsemirrorHelper {
 
     const dom = new JSDOM(baseHtml);
     const doc = dom.window.document;
+    const assets: PdfAsset[] = [];
 
     // KaTeX processing is now handled by the toHTML method, which is called to get baseHtml.
     // No need to call _processKatexForDom(doc) again here.
+
+    // Process images for embedding
+    const imgElements = doc.querySelectorAll("img");
+    for (const img of imgElements) {
+      const originalSrc = img.getAttribute("src");
+      if (!originalSrc) {
+        continue;
+      }
+
+      let attachmentId: string | null = null;
+      try {
+        // The src should be an absolute URL like https://<teamUrl>/api/attachments.redirect?id=<uuid>
+        // as toHTML (with baseUrl) would have converted it.
+        const url = new URL(originalSrc);
+        if (url.pathname.endsWith("/api/attachments.redirect")) {
+          attachmentId = url.searchParams.get("id");
+        }
+      } catch (e) {
+        // Not a valid URL or doesn't match pattern, could be an external image.
+        // Check if it's a relative URL that might have been an attachment before toHTML's conversion.
+        // This case is less likely if baseUrl is always correctly passed to toHTML.
+        const relativeMatch = originalSrc.match(attachmentRedirectRegex);
+        if (relativeMatch && relativeMatch[1]) {
+          attachmentId = relativeMatch[1];
+        } else {
+           // Logger.info("application", "Skipping image processing, not an attachment URL", { src: originalSrc }); // Temporarily commented out
+        }
+      }
+
+      if (attachmentId) {
+        const attachment = await Attachment.findByPk(attachmentId);
+        if (attachment) {
+          try {
+            const data = await FileStorage.getFileBuffer(attachment.key);
+
+            if (!data) {
+              throw new Error(`Data for attachment ${attachment.id} is null or undefined`);
+            }
+            
+            // Sanitize filename and ensure an extension
+            let extension = path.extname(attachment.name).substring(1);
+            if (!extension && attachment.contentType) {
+                const typeExtension = attachment.contentType.split("/")[1];
+                if (typeExtension) extension = typeExtension.split("+")[0]; // Handles cases like image/svg+xml
+            }
+            if (!extension) extension = "bin"; // fallback extension
+
+            const filename = `attachment_${attachment.id}.${extension}`;
+
+            assets.push({
+              filename,
+              data,
+              contentType: attachment.contentType,
+            });
+            img.setAttribute("src", filename); // Update src to relative path for Gotenberg
+          } catch (fetchError) {
+            Logger.error(
+              "Failed to fetch attachment data for PDF",
+              fetchError,
+              { attachmentId }
+            );
+            img.setAttribute(
+              "alt",
+              `Error loading image: ${attachment.name || "attachment"}`
+            );
+            // Optionally remove the img or replace with placeholder text
+            // img.parentNode?.removeChild(img);
+          }
+        } else {
+          Logger.warn("Attachment not found for ID in image src", { attachmentId, src: originalSrc });
+        }
+      }
+    }
 
     // Inject PDF-specific font size for the body if desired,
     // but try to rely on toHTML's existing styles as much as possible.
@@ -975,6 +1064,6 @@ export class ProsemirrorHelper {
       doc.body.appendChild(readyScript);
     }
     
-    return dom.serialize();
+    return { html: dom.serialize(), assets };
   }
 }
