@@ -551,17 +551,37 @@ export class ProsemirrorHelper {
 
     // Convert relative urls to absolute
     if (options?.baseUrl) {
-      const selectors = ["a[href]", "img[src]", "video[src]", "audio[src]", "iframe[src]", "script[src]"];
+      const selectors = [
+        "a[href]",
+        "img[src]",
+        "video[src]",
+        "audio[src]",
+        "iframe[src]",
+        "script[src]",
+      ];
       const elements = doc.querySelectorAll(selectors.join(", "));
 
       for (const el of elements) {
         if (el instanceof HTMLAnchorElement || el instanceof HTMLAreaElement) {
-          if (el.href && (el.href.startsWith("/") || el.href.includes("/api/attachments.redirect?id="))) {
+          if (
+            el.href &&
+            (el.href.startsWith("/") ||
+              el.href.includes("/api/attachments.redirect?id="))
+          ) {
             try {
-              const fullUrl = new URL(el.href.startsWith("/") ? el.href : el.href.substring(el.href.indexOf("/api/")), options.baseUrl).toString();
+              const fullUrl = new URL(
+                el.href.startsWith("/")
+                  ? el.href
+                  : el.href.substring(el.href.indexOf("/api/")),
+                options.baseUrl
+              ).toString();
               el.href = fullUrl;
             } catch (e) {
-              Logger.warn("Failed to construct absolute URL for HTML (href)", { currentUrl: el.href, baseUrl: options.baseUrl, error: e });
+              Logger.warn("Failed to construct absolute URL for HTML (href)", {
+                currentUrl: el.href,
+                baseUrl: options.baseUrl,
+                error: e,
+              });
             }
           }
         } else if (
@@ -570,12 +590,25 @@ export class ProsemirrorHelper {
           el instanceof HTMLIFrameElement ||
           el instanceof HTMLMediaElement // Catches <audio>, <video>
         ) {
-          if (el.src && (el.src.startsWith("/") || el.src.includes("/api/attachments.redirect?id="))) {
+          if (
+            el.src &&
+            (el.src.startsWith("/") ||
+              el.src.includes("/api/attachments.redirect?id="))
+          ) {
             try {
-              const fullUrl = new URL(el.src.startsWith("/") ? el.src : el.src.substring(el.src.indexOf("/api/")), options.baseUrl).toString();
+              const fullUrl = new URL(
+                el.src.startsWith("/")
+                  ? el.src
+                  : el.src.substring(el.src.indexOf("/api/")),
+                options.baseUrl
+              ).toString();
               el.src = fullUrl;
             } catch (e) {
-              Logger.warn("Failed to construct absolute URL for HTML (src)", { currentUrl: el.src, baseUrl: options.baseUrl, error: e });
+              Logger.warn("Failed to construct absolute URL for HTML (src)", {
+                currentUrl: el.src,
+                baseUrl: options.baseUrl,
+                error: e,
+              });
             }
           }
         }
@@ -884,14 +917,23 @@ export class ProsemirrorHelper {
       for (const el of elements) {
         let urlAttr = "";
         // Use type guards to safely check for properties
-        if (el instanceof HTMLAnchorElement || el instanceof HTMLAreaElement || el instanceof HTMLLinkElement) {
+        if (
+          el instanceof HTMLAnchorElement ||
+          el instanceof HTMLAreaElement ||
+          el instanceof HTMLLinkElement
+        ) {
           if (typeof el.href === "string") {
             urlAttr = "href";
           }
-        } else if (el instanceof HTMLImageElement || el instanceof HTMLScriptElement || el instanceof HTMLIFrameElement || el instanceof HTMLMediaElement) {
-           if (typeof el.src === "string") {
-             urlAttr = "src";
-           }
+        } else if (
+          el instanceof HTMLImageElement ||
+          el instanceof HTMLScriptElement ||
+          el instanceof HTMLIFrameElement ||
+          el instanceof HTMLMediaElement
+        ) {
+          if (typeof el.src === "string") {
+            urlAttr = "src";
+          }
         }
 
         if (urlAttr) {
@@ -899,32 +941,63 @@ export class ProsemirrorHelper {
           let newUrlValue = "";
 
           // Access properties safely based on confirmed type
-          if (urlAttr === "href" && (el instanceof HTMLAnchorElement || el instanceof HTMLAreaElement || el instanceof HTMLLinkElement)) {
+          if (
+            urlAttr === "href" &&
+            (el instanceof HTMLAnchorElement ||
+              el instanceof HTMLAreaElement ||
+              el instanceof HTMLLinkElement)
+          ) {
             currentUrlValue = el.href;
-            if (currentUrlValue.startsWith("/") || currentUrlValue.includes("/api/attachments.redirect?id=")) {
+            if (
+              currentUrlValue.startsWith("/") ||
+              currentUrlValue.includes("/api/attachments.redirect?id=")
+            ) {
               try {
-                newUrlValue = new URL(currentUrlValue.startsWith("/") ? currentUrlValue : currentUrlValue.substring(currentUrlValue.indexOf("/api/")), options.baseUrl).toString();
+                newUrlValue = new URL(
+                  currentUrlValue.startsWith("/")
+                    ? currentUrlValue
+                    : currentUrlValue.substring(
+                        currentUrlValue.indexOf("/api/")
+                      ),
+                  options.baseUrl
+                ).toString();
                 el.href = newUrlValue; // Set property directly on typed element
               } catch (e) {
-                 Logger.warn("Failed to construct absolute URL for PDF (href)", {
-                   currentUrl: currentUrlValue,
-                   baseUrl: options.baseUrl,
-                   error: e,
-                 });
+                Logger.warn("Failed to construct absolute URL for PDF (href)", {
+                  currentUrl: currentUrlValue,
+                  baseUrl: options.baseUrl,
+                  error: e,
+                });
               }
             }
-          } else if (urlAttr === "src" && (el instanceof HTMLImageElement || el instanceof HTMLScriptElement || el instanceof HTMLIFrameElement || el instanceof HTMLMediaElement)) {
+          } else if (
+            urlAttr === "src" &&
+            (el instanceof HTMLImageElement ||
+              el instanceof HTMLScriptElement ||
+              el instanceof HTMLIFrameElement ||
+              el instanceof HTMLMediaElement)
+          ) {
             currentUrlValue = el.src;
-             if (currentUrlValue.startsWith("/") || currentUrlValue.includes("/api/attachments.redirect?id=")) {
+            if (
+              currentUrlValue.startsWith("/") ||
+              currentUrlValue.includes("/api/attachments.redirect?id=")
+            ) {
               try {
-                newUrlValue = new URL(currentUrlValue.startsWith("/") ? currentUrlValue : currentUrlValue.substring(currentUrlValue.indexOf("/api/")), options.baseUrl).toString();
+                newUrlValue = new URL(
+                  currentUrlValue.startsWith("/")
+                    ? currentUrlValue
+                    : currentUrlValue.substring(
+                        currentUrlValue.indexOf("/api/")
+                      ),
+                  options.baseUrl
+                ).toString();
                 el.src = newUrlValue; // Set property directly on typed element
               } catch (e) {
-                 Logger.warn("Failed to construct absolute URL for PDF (src)", {
-                   currentUrl: currentUrlValue,
-                   baseUrl: options.baseUrl,
-                   error: e,
-                 });
+                Logger.warn("Failed to construct absolute URL for PDF (src)", {
+                  currentUrl: currentUrlValue,
+                  baseUrl: options.baseUrl,
+                  error: e,
+                });
               }
             }
           }

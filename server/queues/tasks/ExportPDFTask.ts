@@ -1,9 +1,9 @@
 import os from "os";
 import path from "path";
 import archiver from "archiver";
-import fs from "fs-extra";
 import axios from "axios";
 import FormData from "form-data";
+import fs from "fs-extra";
 import { v4 as uuidv4 } from "uuid";
 import { FileOperationState, NavigationNode } from "@shared/types"; // Removed FileOperationFormat
 import env from "@server/env"; // Import env
@@ -285,14 +285,12 @@ export default class ExportPDFTask extends BaseTask<ExportPDFTaskPayload> {
         });
     } finally {
       // Clean up temporary file and mark promise as intentionally unhandled
-      void fs
-        .remove(tmpPath)
-        .catch((err) =>
-          Logger.error(
-            `Failed to remove temp export file ${tmpPath}`,
-            err // Pass the error object
-          )
-        );
+      void fs.remove(tmpPath).catch((err) =>
+        Logger.error(
+          `Failed to remove temp export file ${tmpPath}`,
+          err // Pass the error object
+        )
+      );
     }
   }
 }

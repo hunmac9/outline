@@ -442,7 +442,8 @@ export const downloadDocumentAsPDF = createAction({
   iconInContextMenu: false,
   visible: ({ activeDocumentId, stores }) =>
     !!activeDocumentId && stores.policies.abilities(activeDocumentId).download,
-  perform: async ({ activeDocumentId, t, stores }) => { // Make perform async
+  perform: async ({ activeDocumentId, t, stores }) => {
+    // Make perform async
     if (!activeDocumentId) {
       return;
     }
@@ -475,7 +476,15 @@ export const downloadDocumentAsPDF = createAction({
       a.style.display = "none";
       a.href = url;
       // Create a filename - use slugify if available or simple replace
-      const slugify = (text: string) => text.toString().toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]+/g, "").replace(/--+/g, "-").replace(/^-+/, "").replace(/-+$/, "");
+      const slugify = (text: string) =>
+        text
+          .toString()
+          .toLowerCase()
+          .replace(/\s+/g, "-")
+          .replace(/[^\w-]+/g, "")
+          .replace(/--+/g, "-")
+          .replace(/^-+/, "")
+          .replace(/-+$/, "");
       const filename = `${slugify(document.titleWithDefault)}.pdf`;
       a.download = filename;
 
@@ -489,7 +498,10 @@ export const downloadDocumentAsPDF = createAction({
     } catch (error) {
       console.error("Error during PDF export action:", error);
       toast.error(t("Failed to download PDF"), {
-        description: error instanceof Error ? error.message : t("An unknown error occurred."),
+        description:
+          error instanceof Error
+            ? error.message
+            : t("An unknown error occurred."),
       });
     } finally {
       if (loadingToastId) {

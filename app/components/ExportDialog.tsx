@@ -65,19 +65,35 @@ function ExportDialog({ collection, document, onSubmit }: Props) {
       .replace(/-+$/, ""); // Trim - from end of text
 
   const handleSubmit = async () => {
-    console.log("[ExportDialog] handleSubmit called. Document:", document ? document.id : "null", "Format:", format);
+    console.log(
+      "[ExportDialog] handleSubmit called. Document:",
+      document ? document.id : "null",
+      "Format:",
+      format
+    );
 
     // Direct PDF download for single document
     if (document && format === FileOperationFormat.PDF) {
-      console.log("[ExportDialog] Attempting direct PDF download for document:", document.id);
+      console.log(
+        "[ExportDialog] Attempting direct PDF download for document:",
+        document.id
+      );
       try {
         // Use the correct enum case ExportContentType.Pdf
-        console.log("[ExportDialog] Calling document.download(ExportContentType.Pdf)...");
+        console.log(
+          "[ExportDialog] Calling document.download(ExportContentType.Pdf)..."
+        );
         const response = await document.download(ExportContentType.Pdf);
-        
+
         // Log response details
-        console.log("[ExportDialog] PDF Export Response Status:", response.status);
-        console.log("[ExportDialog] PDF Export Response Headers:", Object.fromEntries(response.headers.entries()));
+        console.log(
+          "[ExportDialog] PDF Export Response Status:",
+          response.status
+        );
+        console.log(
+          "[ExportDialog] PDF Export Response Headers:",
+          Object.fromEntries(response.headers.entries())
+        );
 
         console.log("[ExportDialog] Calling response.blob()...");
         const blob = await response.blob(); // Get the blob from the response
@@ -107,7 +123,9 @@ function ExportDialog({ collection, document, onSubmit }: Props) {
         a.download = filename;
 
         // Append the link to the body, click it, and remove it
-        console.log("[ExportDialog] Appending link, clicking, and revoking URL...");
+        console.log(
+          "[ExportDialog] Appending link, clicking, and revoking URL..."
+        );
         window.document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -119,7 +137,10 @@ function ExportDialog({ collection, document, onSubmit }: Props) {
       } catch (error) {
         console.error("[ExportDialog] Error during PDF export:", error);
         toast.error(t("Failed to download PDF"), {
-          description: error instanceof Error ? error.message : t("An unknown error occurred."),
+          description:
+            error instanceof Error
+              ? error.message
+              : t("An unknown error occurred."),
         });
         // Do not call onSubmit here on error, let the dialog stay open.
       }
