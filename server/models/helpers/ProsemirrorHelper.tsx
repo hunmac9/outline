@@ -1,6 +1,8 @@
 import hljs from "highlight.js";
 import { JSDOM } from "jsdom";
 import katex from "katex";
+import fs from "fs"; // Changed from fs/promises
+import path from "path";
 import compact from "lodash/compact";
 import flatten from "lodash/flatten";
 import isMatch from "lodash/isMatch";
@@ -823,6 +825,97 @@ export class ProsemirrorHelper {
     styleElement.setAttribute("type", "text/css");
     styleElement.innerHTML = pdfOverrideStyles;
     doc.head.appendChild(styleElement);
+
+    // Phase 1: Implement Server-Side Rendering (SSR) for KaTeX
+    const mathInlineElements = doc.querySelectorAll("math-inline");
+    mathInlineElements.forEach((el) => {
+      const latexSource = el.textContent || "";
+      try {
+        const renderedHtml = katex.renderToString(latexSource, {
+          displayMode: false,
+          output: "html",
+          throwOnError: false,
+        });
+        const span = doc.createElement("span");
+        span.innerHTML = renderedHtml;
+        // Replace current element with all children of the new span
+        // as renderToString might return multiple top-level elements (though usually one wrapper)
+        // or just text nodes if it's simple.
+        // A common pattern is to replace the element with the first child of the rendered HTML container.
+        // If renderedHtml is just text, it needs to be handled.
+        // A safer way is to parse the renderedHtml into a fragment and replace.
+        const tempDiv = doc.createElement("div");
+        tempDiv.innerHTML = renderedHtml;
+        const parent = el.parentNode;
+        if (parent) {
+          while (tempDiv.firstChild) {
+            parent.insertBefore(tempDiv.firstChild, el);
+          }
+          parent.removeChild(el);
+        }
+      } catch (error) {
+        Logger.error("KaTeX rendering error for inline math", error, {
+          latex: latexSource,
+        });
+        el.innerHTML = `<span style="color:red;">KaTeX Error: ${
+          (error as Error).message
+        }</span>`;
+      }
+    });
+
+    const mathDisplayElements = doc.querySelectorAll("math-display");
+    mathDisplayElements.forEach((el) => {
+      const latexSource = el.textContent || "";
+      try {
+        const renderedHtml = katex.renderToString(latexSource, {
+          displayMode: true,
+          output: "html",
+          throwOnError: false,
+        });
+        const div = doc.createElement("div");
+        div.innerHTML = renderedHtml;
+        // Replace current element with the rendered HTML
+        const parent = el.parentNode;
+        if (parent) {
+          while (div.firstChild) {
+            parent.insertBefore(div.firstChild, el);
+          }
+          parent.removeChild(el);
+        }
+      } catch (error) {
+        Logger.error("KaTeX rendering error for display math", error, {
+          latex: latexSource,
+        });
+        el.innerHTML = `<div style="color:red;">KaTeX Error: ${
+          (error as Error).message
+        }</div>`;
+      }
+    });
+
+    // Phase 2: Include KaTeX CSS Styles
+    // This part needs to be async if we use fs.readFile, or we need to make toPdfHtml async
+    // For now, let's assume we can make it async or handle the promise.
+    // The original function is synchronous, so we'll need to change its signature.
+    // However, the calling function in PdfGenerator.ts is async, so this should be fine.
+    // Let's adjust toPdfHtml to be async.
+
+    // The path to katex.min.css. This might need adjustment based on your project structure
+    // and how node_modules are resolved at runtime.
+    // Using require.resolve to get the path to the katex package and then construct the path to the CSS file.
+    let katexCSS = "";
+    try {
+      const katexPackagePath = path.dirname(require.resolve("katex/package.json"));
+      const katexCSSPath = path.join(katexPackagePath, "dist", "katex.min.css");
+      katexCSS = fs.readFileSync(katexCSSPath, "utf8"); // Use readFileSync for now to keep it simple
+                                                       // If this causes issues, we'll make the function async
+      const katexStyleElement = doc.createElement("style");
+      katexStyleElement.setAttribute("data-katex-styles", "true");
+      katexStyleElement.innerHTML = katexCSS;
+      doc.head.appendChild(katexStyleElement);
+    } catch (error) {
+      Logger.error("Could not read or inject katex.min.css", error);
+      // Optionally, add a visible error or placeholder in the HTML
+    }
     
     // Ensure `window.status = "ready"` script is present for Gotenberg.
     // toHTML's mermaid handling already includes this, but if mermaid is not included,
