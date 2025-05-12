@@ -780,7 +780,133 @@ export class ProsemirrorHelper {
       dom.window.document.body.appendChild(element);
     }
 
+    // Apply KaTeX SSR and CSS inlining
+    ProsemirrorHelper._processKatexForDom(doc);
+
+    // Inject mermaidjs scripts if the document contains mermaid diagrams
+    if (options?.includeMermaid) {
+      const mermaidElements = dom.window.document.querySelectorAll(
+        `[data-language="mermaidjs"] pre code`
+      );
+
+      // Unwrap <pre> tags to enable Mermaid script to correctly render inner content
+      for (const el of mermaidElements) {
+        const parent = el.parentNode as HTMLElement;
+        if (parent) {
+          while (el.firstChild) {
+            parent.insertBefore(el.firstChild, el);
+          }
+          parent.removeChild(el);
+          parent.setAttribute("class", "mermaid");
+        }
+      }
+
+      const element = dom.window.document.createElement("script");
+      element.setAttribute("type", "module");
+
+      // Inject Mermaid script
+      if (mermaidElements.length) {
+        element.innerHTML = `
+          import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+          mermaid.initialize({
+            startOnLoad: true,
+            fontFamily: "inherit",
+          });
+          window.status = "ready";
+        `;
+      } else {
+        // If no mermaid elements, still ensure window.status is set for consistency if expected by PDF generator
+        // However, for plain HTML export, this might not be necessary if not using Gotenberg.
+        // For now, keeping it simple and only adding the full script if mermaid elements exist.
+        // If window.status is critical for non-mermaid HTML exports, this part might need adjustment.
+      }
+
+      if (mermaidElements.length) { // Only append script if there's mermaid content
+        dom.window.document.body.appendChild(element);
+      }
+    }
+
     return dom.serialize();
+  }
+
+  /**
+   * Helper method to perform KaTeX SSR and CSS inlining on a JSDOM document.
+   * @param document The JSDOM document object to process.
+   */
+  private static _processKatexForDom(document: globalThis.Document): void {
+    // Phase 1: Implement Server-Side Rendering (SSR) for KaTeX
+    const mathInlineElements = document.querySelectorAll("math-inline");
+    mathInlineElements.forEach((el) => {
+      const latexSource = el.textContent || "";
+      try {
+        const renderedHtml = katex.renderToString(latexSource, {
+          displayMode: false,
+          output: "html",
+          throwOnError: false,
+        });
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = renderedHtml;
+        const parent = el.parentNode;
+        if (parent) {
+          while (tempDiv.firstChild) {
+            parent.insertBefore(tempDiv.firstChild, el);
+          }
+          parent.removeChild(el);
+        }
+      } catch (error) {
+        Logger.error("KaTeX rendering error for inline math", error, {
+          latex: latexSource,
+        });
+        el.innerHTML = `<span style="color:red;">KaTeX Error: ${
+          (error as Error).message
+        }</span>`;
+      }
+    });
+
+    const mathDisplayElements = document.querySelectorAll("math-display");
+    mathDisplayElements.forEach((el) => {
+      const latexSource = el.textContent || "";
+      try {
+        const renderedHtml = katex.renderToString(latexSource, {
+          displayMode: true,
+          output: "html",
+          throwOnError: false,
+        });
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = renderedHtml;
+        const parent = el.parentNode;
+        if (parent) {
+          while (tempDiv.firstChild) {
+            parent.insertBefore(tempDiv.firstChild, el);
+          }
+          parent.removeChild(el);
+        }
+      } catch (error) {
+        Logger.error("KaTeX rendering error for display math", error, {
+          latex: latexSource,
+        });
+        el.innerHTML = `<div style="color:red;">KaTeX Error: ${
+          (error as Error).message
+        }</div>`;
+      }
+    });
+
+    // Phase 2: Include KaTeX CSS Styles
+    // Check if KaTeX styles are already injected
+    if (!document.head.querySelector("style[data-katex-styles='true']")) {
+      let katexCSS = "";
+      try {
+        const katexPackagePath = path.dirname(require.resolve("katex/package.json"));
+        const katexCSSPath = path.join(katexPackagePath, "dist", "katex.min.css");
+        katexCSS = fs.readFileSync(katexCSSPath, "utf8");
+        const katexStyleElement = document.createElement("style");
+        katexStyleElement.setAttribute("data-katex-styles", "true");
+        katexStyleElement.innerHTML = katexCSS;
+        document.head.appendChild(katexStyleElement);
+      } catch (error) {
+        Logger.error("Could not read or inject katex.min.css", error);
+      }
+    }
   }
 
   /**
@@ -805,6 +931,9 @@ export class ProsemirrorHelper {
     const dom = new JSDOM(baseHtml);
     const doc = dom.window.document;
 
+    // KaTeX processing is now handled by the toHTML method, which is called to get baseHtml.
+    // No need to call _processKatexForDom(doc) again here.
+
     // Inject PDF-specific font size for the body if desired,
     // but try to rely on toHTML's existing styles as much as possible.
     const pdfOverrideStyles = `
@@ -826,97 +955,6 @@ export class ProsemirrorHelper {
     styleElement.innerHTML = pdfOverrideStyles;
     doc.head.appendChild(styleElement);
 
-    // Phase 1: Implement Server-Side Rendering (SSR) for KaTeX
-    const mathInlineElements = doc.querySelectorAll("math-inline");
-    mathInlineElements.forEach((el) => {
-      const latexSource = el.textContent || "";
-      try {
-        const renderedHtml = katex.renderToString(latexSource, {
-          displayMode: false,
-          output: "html",
-          throwOnError: false,
-        });
-        const span = doc.createElement("span");
-        span.innerHTML = renderedHtml;
-        // Replace current element with all children of the new span
-        // as renderToString might return multiple top-level elements (though usually one wrapper)
-        // or just text nodes if it's simple.
-        // A common pattern is to replace the element with the first child of the rendered HTML container.
-        // If renderedHtml is just text, it needs to be handled.
-        // A safer way is to parse the renderedHtml into a fragment and replace.
-        const tempDiv = doc.createElement("div");
-        tempDiv.innerHTML = renderedHtml;
-        const parent = el.parentNode;
-        if (parent) {
-          while (tempDiv.firstChild) {
-            parent.insertBefore(tempDiv.firstChild, el);
-          }
-          parent.removeChild(el);
-        }
-      } catch (error) {
-        Logger.error("KaTeX rendering error for inline math", error, {
-          latex: latexSource,
-        });
-        el.innerHTML = `<span style="color:red;">KaTeX Error: ${
-          (error as Error).message
-        }</span>`;
-      }
-    });
-
-    const mathDisplayElements = doc.querySelectorAll("math-display");
-    mathDisplayElements.forEach((el) => {
-      const latexSource = el.textContent || "";
-      try {
-        const renderedHtml = katex.renderToString(latexSource, {
-          displayMode: true,
-          output: "html",
-          throwOnError: false,
-        });
-        const div = doc.createElement("div");
-        div.innerHTML = renderedHtml;
-        // Replace current element with the rendered HTML
-        const parent = el.parentNode;
-        if (parent) {
-          while (div.firstChild) {
-            parent.insertBefore(div.firstChild, el);
-          }
-          parent.removeChild(el);
-        }
-      } catch (error) {
-        Logger.error("KaTeX rendering error for display math", error, {
-          latex: latexSource,
-        });
-        el.innerHTML = `<div style="color:red;">KaTeX Error: ${
-          (error as Error).message
-        }</div>`;
-      }
-    });
-
-    // Phase 2: Include KaTeX CSS Styles
-    // This part needs to be async if we use fs.readFile, or we need to make toPdfHtml async
-    // For now, let's assume we can make it async or handle the promise.
-    // The original function is synchronous, so we'll need to change its signature.
-    // However, the calling function in PdfGenerator.ts is async, so this should be fine.
-    // Let's adjust toPdfHtml to be async.
-
-    // The path to katex.min.css. This might need adjustment based on your project structure
-    // and how node_modules are resolved at runtime.
-    // Using require.resolve to get the path to the katex package and then construct the path to the CSS file.
-    let katexCSS = "";
-    try {
-      const katexPackagePath = path.dirname(require.resolve("katex/package.json"));
-      const katexCSSPath = path.join(katexPackagePath, "dist", "katex.min.css");
-      katexCSS = fs.readFileSync(katexCSSPath, "utf8"); // Use readFileSync for now to keep it simple
-                                                       // If this causes issues, we'll make the function async
-      const katexStyleElement = doc.createElement("style");
-      katexStyleElement.setAttribute("data-katex-styles", "true");
-      katexStyleElement.innerHTML = katexCSS;
-      doc.head.appendChild(katexStyleElement);
-    } catch (error) {
-      Logger.error("Could not read or inject katex.min.css", error);
-      // Optionally, add a visible error or placeholder in the HTML
-    }
-    
     // Ensure `window.status = "ready"` script is present for Gotenberg.
     // toHTML's mermaid handling already includes this, but if mermaid is not included,
     // or to be absolutely sure, we can add it.
