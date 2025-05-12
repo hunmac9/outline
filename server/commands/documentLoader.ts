@@ -1,4 +1,3 @@
-import invariant from "invariant";
 import { Op, WhereOptions } from "sequelize";
 import isUUID from "validator/lib/isUUID";
 import { UrlHelper } from "@shared/utils/UrlHelper";
@@ -22,6 +21,8 @@ type Props = {
 
 type Result = {
   document: Document;
+  share: Share | null;
+  collection: Collection | null;
   share?: Share;
   collection?: Collection | null;
   team: Team;
@@ -34,9 +35,9 @@ export default async function loadDocument({
   user,
   includeState,
 }: Props): Promise<Result> {
-  let document;
-  let collection;
-  let share;
+  let document: Document | null = null;
+  let collection: Collection | null = null;
+  let share: Share | null = null;
 
   if (!shareId && !(id && user)) {
     throw AuthenticationError(`Authentication or shareId required`);
@@ -73,20 +74,7 @@ export default async function loadDocument({
       where: whereClause,
       include: [
         {
-          // unscoping here allows us to return unpublished documents
-          model: Document.unscoped(),
-          include: [
-            {
-              model: User,
-              as: "createdBy",
-              paranoid: false,
-            },
-            {
-              model: User,
-              as: "updatedBy",
-              paranoid: false,
-            },
-          ],
+          model: Document.scope("withDrafts"),
           required: true,
           as: "document",
         },
@@ -150,14 +138,13 @@ export default async function loadDocument({
     const canReadDocument = user && can(user, "read", document);
 
     if (canReadDocument) {
-      // Cannot use document.collection here as it does not include the
-      // documentStructure by default through the relationship.
       if (document.collectionId) {
-        collection = await Collection.findByPk(document.collectionId);
-
-        if (!collection) {
-          throw NotFoundError("Collection could not be found for document");
-        }
+        collection = await Collection.scope("withDocumentStructure").findByPk(
+          document.collectionId,
+          {
+            rejectOnEmpty: true,
+          }
+        );
       }
 
       const teamToReturn = document.team || share?.team;
@@ -180,11 +167,15 @@ export default async function loadDocument({
 
     // It is possible to disable sharing at the collection so we must check
     if (document.collectionId) {
-      collection = await Collection.findByPk(document.collectionId);
+      collection = await Collection.scope("withDocumentStructure").findByPk(
+        document.collectionId,
+        {
+          rejectOnEmpty: true,
+        }
+      );
     }
-    invariant(collection, "collection not found");
 
-    if (!collection.sharing) {
+    if (!collection?.sharing) {
       throw AuthorizationError();
     }
 

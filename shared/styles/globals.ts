@@ -119,4 +119,11 @@ export default createGlobalStyle<Props>`
     border-radius: 8px;
     cursor: pointer;
   }
+
+  :root {
+    --sat: env(safe-area-inset-top);
+    --sar: env(safe-area-inset-right);
+    --sab: env(safe-area-inset-bottom);
+    --sal: env(safe-area-inset-left);
+  }
 `;
