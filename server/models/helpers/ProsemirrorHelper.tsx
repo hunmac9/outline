@@ -790,406 +790,58 @@ export class ProsemirrorHelper {
    * @returns The content as a HTML string suitable for PDF conversion
    */
   static toPdfHtml(node: Node, options?: PdfHtmlOptions): string {
-    const sheet = new ServerStyleSheet();
-    let html = "";
-    let styleTags = "";
+    // Generate base HTML using the toHTML method, which is known to work well for direct download.
+    // Pass through relevant options.
+    const baseHtml = ProsemirrorHelper.toHTML(node, {
+      title: options?.title,
+      includeStyles: options?.includeStyles, // Should be true to get EditorContainer styles
+      includeMermaid: options?.includeMermaid,
+      centered: options?.centered,
+      baseUrl: options?.baseUrl,
+    });
 
-    const pdfSpecificCss = `
+    const dom = new JSDOM(baseHtml);
+    const doc = dom.window.document;
+
+    // Inject PDF-specific font size for the body if desired,
+    // but try to rely on toHTML's existing styles as much as possible.
+    const pdfOverrideStyles = `
       body {
         font-size: 10pt; /* Base font for PDF */
-        line-height: 1.4; /* Base line-height for PDF */
+        /* line-height: 1.4; /* Base line-height for PDF - consider if needed or if toHTML's is fine */
       }
-      /* PDF-specific font sizes for headings. Margins and line-heights should primarily come from EditorContainer styles. */
+      /* Ensure heading point sizes are applied for PDF if toHTML uses relative units */
       .ProseMirror h1 { font-size: 18pt !important; }
       .ProseMirror h2 { font-size: 16pt !important; }
       .ProseMirror h3 { font-size: 14pt !important; }
       .ProseMirror h4 { font-size: 12pt !important; }
       .ProseMirror h5 { font-size: 11pt !important; }
       .ProseMirror h6 { font-size: 10pt !important; }
-
-      /* Let EditorContainer styles primarily handle paragraph and list styling. */
-      /* Avoid broad white-space overrides here as they conflict. */
-      
-      /* Minimal list styling if EditorContainer doesn't cover it adequately for PDF. */
-      /* These might be re-introduced if lists are still problematic after removing broader overrides. */
-      /*
-      .ProseMirror ul, .ProseMirror ol {
-        padding-left: 20px; 
-        margin-bottom: 1em;
-      }
-      .ProseMirror li {
-        list-style-position: outside;
-        padding-left: 5px; 
-        margin-bottom: 0.5em; 
-      }
-      .ProseMirror li p {
-        margin-top: 0;
-        margin-bottom: 0.25em; 
-      }
-      .ProseMirror li p:last-child {
-        margin-bottom: 0;
-      }
-      */
-
-      /* Code block font size can be adjusted here if needed, but let hljs theme and EditorContainer handle most styling. */
-      /* Example: .ProseMirror .code-block pre code.hljs { font-size: 9pt !important; } */
-      
-      .math-inline, .math-block {
-        font-size: 10pt; /* Adjust math font size if needed */
-      }
     `;
 
-    // Order: 
-    // 1. Styled-components base styles (will be collected by sheet.collectStyles and appended later)
-    // 2. Highlight.js theme (for code syntax colors)
-    // 3. pdfSpecificCss (for minimal PDF overrides like base font size and heading point sizes)
+    const styleElement = doc.createElement("style");
+    styleElement.setAttribute("type", "text/css");
+    styleElement.innerHTML = pdfOverrideStyles;
+    doc.head.appendChild(styleElement);
     
-    let collectedStyleTags = ""; // Will hold styled-components styles
-
-    // Inject KaTeX CSS if needed (example)
-    // styleTags += `<style type="text/css">${katexCss}</style>`;
-
-    // Start with highlight.js and our specific PDF CSS
-    styleTags = `<style type="text/css">${hljsGithubCss}</style>`;
-    styleTags += `<style type="text/css">${pdfSpecificCss}</style>`;
-
-    const Centered = options?.centered
-      ? styled.article`
-          max-width: 46em;
-          margin: 0 auto;
-          padding: 0 1em;
-        `
-      : "article";
-
-    const rtl = isRTL(node.textContent);
-    const content = <div id="content" className="ProseMirror" />;
-    const children = (
-      <>
-        {options?.title && <h1 dir={rtl ? "rtl" : "ltr"}>{options.title}</h1>}
-        {options?.includeStyles !== false ? (
-          <EditorContainer dir={rtl ? "rtl" : "ltr"} rtl={rtl} staticHTML>
-            {content}
-          </EditorContainer>
-        ) : (
-          content
-        )}
-      </>
-    );
-
-    try {
-      html = renderToString(
-        sheet.collectStyles(
-          <ThemeProvider theme={light}>
-            <>
-              {options?.includeStyles === false ? (
-                <article>{children}</article>
-              ) : (
-                <>
-                  <GlobalStyles staticHTML />
-                  <Centered>{children}</Centered>
-                </>
-              )}
-            </>
-          </ThemeProvider>
-        )
-      );
-      collectedStyleTags = sheet.getStyleTags(); // Capture styled-components styles
-    } catch (error) {
-      Logger.error("Failed to render styles for PDF HTML conversion", error);
-    } finally {
-      sheet.seal();
-    }
-
-    // Append styled-components styles last so they form the base and can be specifically overridden
-    styleTags += collectedStyleTags;
-
-    const dom = new JSDOM(
-      `<!DOCTYPE html><html><head><meta charset="utf-8">${styleTags}</head><body>${html}</body></html>`
-    );
-    const doc = dom.window.document;
-    const target = doc.getElementById("content");
-
-    if (!target) {
-      Logger.error(
-        "Target #content element not found for PDF HTML serialization", new Error("Target #content element not found for PDF HTML serialization")
-      );
-      return dom.serialize(); // Return what we have
-    }
-
-    // Custom serializer function to handle specific nodes
-    const serializeNode = (
-      nodeToSerialize: Node,
-      targetElement: HTMLElement
-    ) => {
-      if (
-        nodeToSerialize.type.name === "math_inline" ||
-        nodeToSerialize.type.name === "math_block"
-      ) {
-        try {
-          const isBlock = nodeToSerialize.type.name === "math_block";
-          const renderedMath = katex.renderToString(
-            nodeToSerialize.textContent || "",
-            {
-              displayMode: isBlock,
-              throwOnError: false, // Don't throw errors, maybe log them
-              output: "html", // Use HTML+MathML for better compatibility
-            }
-          );
-          const span = doc.createElement(isBlock ? "div" : "span");
-          span.className = `math ${isBlock ? "math-block" : "math-inline"}`;
-          span.innerHTML = renderedMath;
-          targetElement.appendChild(span);
-        } catch (e) {
-          Logger.warn("KaTeX rendering failed server-side", {
-            error: e,
-            latex: nodeToSerialize.textContent,
-          });
-          // Fallback: render the raw LaTeX source
-          const fallback = doc.createElement(
-            nodeToSerialize.type.name === "math_block" ? "div" : "span"
-          );
-          fallback.className = `math-error ${nodeToSerialize.type.name}`;
-          fallback.textContent = nodeToSerialize.textContent;
-          targetElement.appendChild(fallback);
-        }
-      } else if (nodeToSerialize.type.name === "code_block") {
-        const language = nodeToSerialize.attrs.language || "plaintext";
-        const code = nodeToSerialize.textContent || "";
-        let highlightedCode;
-        try {
-          if (language === "mermaidjs") {
-            // Keep mermaid code raw for client-side rendering via script
-            highlightedCode = code;
-          } else if (hljs.getLanguage(language)) {
-            highlightedCode = hljs.highlight(code, {
-              language,
-              ignoreIllegals: true,
-            }).value;
-          } else {
-            highlightedCode = hljs.highlightAuto(code).value; // Auto-detect if language not supported/found
-          }
-        } catch (e) {
-          Logger.warn("Highlight.js rendering failed server-side", {
-            error: e,
-            language,
-            code,
-          });
-          highlightedCode = code; // Fallback to raw code
-        }
-
-        const div = doc.createElement("div");
-        div.className = `code-block language-${language}`; // Add language class for potential CSS
-        div.dataset.language = language;
-        const pre = doc.createElement("pre");
-        const codeEl = doc.createElement("code");
-        codeEl.innerHTML = highlightedCode; // Use innerHTML as highlight.js returns HTML
-        codeEl.spellcheck = false;
-        pre.appendChild(codeEl);
-        div.appendChild(pre);
-        targetElement.appendChild(div);
-      } else if (nodeToSerialize.type.name === "embed") {
-        const href = nodeToSerialize.attrs.href || "#";
-        const placeholder = doc.createElement("div");
-        placeholder.className = "embed-placeholder";
-        const link = doc.createElement("a");
-        link.href = href;
-        link.textContent = `[Embed: ${href}]`;
-        link.target = "_blank"; // Open in new tab
-        placeholder.appendChild(link);
-        // Optional: Add icon/thumbnail later
-        targetElement.appendChild(placeholder);
-      } else if (nodeToSerialize.isText) {
-        // Handle text nodes directly
-        targetElement.appendChild(
-          doc.createTextNode(nodeToSerialize.text || "")
-        );
-      } else {
-        // Default serialization for other nodes using DOMSerializer
-        const serializer = DOMSerializer.fromSchema(schema);
-        try {
-          // Create a fragment of the node's content if it's a block node,
-          // otherwise, create a fragment containing the node itself (for inline nodes with marks)
-          const fragment = nodeToSerialize.isBlock
-            ? nodeToSerialize.content
-            : Fragment.from(nodeToSerialize);
-
-          // Serialize the fragment into a temporary DocumentFragment
-          const tempFragment = doc.createDocumentFragment();
-          // Note: serializeFragment requires a Node or DocumentFragment as target.
-          serializer.serializeFragment(
-            fragment,
-            { document: doc },
-            tempFragment
-          );
-
-          // Append the serialized content from the fragment
-          // to the target element
-          targetElement.appendChild(tempFragment);
-        } catch (e) {
-          Logger.error(
-            `Failed to serialize node type ${nodeToSerialize.type.name} for PDF`,
-            e
-          );
-          // Optionally render text content as fallback
-          if (nodeToSerialize.textContent) {
-            targetElement.appendChild(
-              doc.createTextNode(nodeToSerialize.textContent)
-            );
-          }
-        }
+    // Ensure `window.status = "ready"` script is present for Gotenberg.
+    // toHTML's mermaid handling already includes this, but if mermaid is not included,
+    // or to be absolutely sure, we can add it.
+    // Check if a script setting window.status already exists from toHTML (mermaid case)
+    let windowStatusScriptExists = false;
+    const scripts = doc.body.querySelectorAll("script");
+    scripts.forEach(script => {
+      if (script.innerHTML.includes("window.status = \"ready\"")) {
+        windowStatusScriptExists = true;
       }
-    };
+    });
 
-    // Serialize the main document content using the custom function
-    node.content.forEach((childNode) => serializeNode(childNode, target));
-
-    // Convert relative urls to absolute (if base url provided)
-    if (options?.baseUrl) {
-      const selectors = ["a[href]", "img[src]", "video[src]", "audio[src]"];
-      const elements = doc.querySelectorAll(selectors.join(", "));
-
-      for (const el of elements) {
-        let urlAttr = "";
-        // Use type guards to safely check for properties
-        if (
-          el instanceof HTMLAnchorElement ||
-          el instanceof HTMLAreaElement ||
-          el instanceof HTMLLinkElement
-        ) {
-          if (typeof el.href === "string") {
-            urlAttr = "href";
-          }
-        } else if (
-          el instanceof HTMLImageElement ||
-          el instanceof HTMLScriptElement ||
-          el instanceof HTMLIFrameElement ||
-          el instanceof HTMLMediaElement
-        ) {
-          if (typeof el.src === "string") {
-            urlAttr = "src";
-          }
-        }
-
-        if (urlAttr) {
-          let currentUrlValue = "";
-          let newUrlValue = "";
-
-          // Access properties safely based on confirmed type
-          if (
-            urlAttr === "href" &&
-            (el instanceof HTMLAnchorElement ||
-              el instanceof HTMLAreaElement ||
-              el instanceof HTMLLinkElement)
-          ) {
-            currentUrlValue = el.href;
-            if (
-              currentUrlValue.startsWith("/") ||
-              currentUrlValue.includes("/api/attachments.redirect?id=")
-            ) {
-              try {
-                newUrlValue = new URL(
-                  currentUrlValue.startsWith("/")
-                    ? currentUrlValue
-                    : currentUrlValue.substring(
-                        currentUrlValue.indexOf("/api/")
-                      ),
-                  options.baseUrl
-                ).toString();
-                el.href = newUrlValue; // Set property directly on typed element
-              } catch (e) {
-                Logger.warn("Failed to construct absolute URL for PDF (href)", {
-                  currentUrl: currentUrlValue,
-                  baseUrl: options.baseUrl,
-                  error: e,
-                });
-              }
-            }
-          } else if (
-            urlAttr === "src" &&
-            (el instanceof HTMLImageElement ||
-              el instanceof HTMLScriptElement ||
-              el instanceof HTMLIFrameElement ||
-              el instanceof HTMLMediaElement)
-          ) {
-            currentUrlValue = el.src;
-            if (
-              currentUrlValue.startsWith("/") ||
-              currentUrlValue.includes("/api/attachments.redirect?id=")
-            ) {
-              try {
-                newUrlValue = new URL(
-                  currentUrlValue.startsWith("/")
-                    ? currentUrlValue
-                    : currentUrlValue.substring(
-                        currentUrlValue.indexOf("/api/")
-                      ),
-                  options.baseUrl
-                ).toString();
-                el.src = newUrlValue; // Set property directly on typed element
-              } catch (e) {
-                Logger.warn("Failed to construct absolute URL for PDF (src)", {
-                  currentUrl: currentUrlValue,
-                  baseUrl: options.baseUrl,
-                  error: e,
-                });
-              }
-            }
-          }
-        }
-      }
+    if (!windowStatusScriptExists) {
+      const readyScript = doc.createElement("script");
+      readyScript.innerHTML = `window.status = "ready";`;
+      doc.body.appendChild(readyScript);
     }
-
-    // Inject mermaidjs scripts if the document contains mermaid diagrams
-    // (This part remains the same as the original toHTML)
-    if (options?.includeMermaid) {
-      const mermaidElements = doc.querySelectorAll(
-        `[data-language="mermaidjs"] code` // Target the generated code element
-      );
-
-      if (mermaidElements.length > 0) {
-        // Modify the container for mermaid rendering
-        mermaidElements.forEach((el) => {
-          const parentPre = el.parentElement; // pre
-          const parentDiv = parentPre?.parentElement; // div.code-block
-          if (parentDiv && parentPre) {
-            parentDiv.innerHTML = el.innerHTML; // Move code content directly into div
-            parentDiv.classList.add("mermaid"); // Add mermaid class for the script to find
-            parentDiv.classList.remove("code-block", `language-mermaidjs`); // Remove code block classes
-          }
-        });
-
-        const element = doc.createElement("script");
-        element.setAttribute("type", "module");
-        element.innerHTML = `
-            try {
-              await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(m => {
-                m.default.initialize({
-                  startOnLoad: false, // We call render explicitly
-                  fontFamily: "inherit",
-                  // Add any other necessary config
-                });
-                m.default.run({ nodes: document.querySelectorAll('.mermaid') });
-              });
-            } catch (e) {
-              console.error("Mermaid failed to load or run", e);
-            } finally {
-              window.status = "ready"; // Signal completion regardless of mermaid success
-            }
-        `;
-        doc.body.appendChild(element);
-      } else {
-        // Still need to signal ready even if no mermaid diagrams
-        const element = doc.createElement("script");
-        element.innerHTML = `window.status = "ready";`;
-        doc.body.appendChild(element);
-      }
-    } else {
-      // If mermaid isn't included, signal ready immediately
-      const element = doc.createElement("script");
-      element.innerHTML = `window.status = "ready";`;
-      doc.body.appendChild(element);
-    }
-
+    
     return dom.serialize();
   }
 }
