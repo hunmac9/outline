@@ -1,5 +1,7 @@
 import axios from "axios";
 import FormData from "form-data";
+import fs from "fs/promises"; // For writing the HTML to a file
+import path from "path"; // For constructing file path
 import { ProsemirrorData } from "@shared/types";
 import env from "@server/env";
 import Logger from "@server/logging/Logger";
@@ -28,6 +30,18 @@ class PdfGenerator {
         centered: true,
         baseUrl: team.url, // Use team URL for resolving relative links if any
       });
+
+      // Log and save the HTML for debugging
+      Logger.info("task", `Generated HTML for document ${document.id}:`);
+      Logger.info("task", html); // Log the HTML to console
+
+      const debugHtmlPath = path.join(process.cwd(), `generated_pdf_content_${document.id}.html`);
+      try {
+        await fs.writeFile(debugHtmlPath, html, "utf8");
+        Logger.info("task", `Saved generated HTML to ${debugHtmlPath}`);
+      } catch (writeError) {
+        Logger.error("Failed to write debug HTML file", writeError, { documentId: document.id });
+      }
 
       const form = new FormData();
       form.append("files", Buffer.from(html, "utf8"), {
