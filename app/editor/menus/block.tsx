@@ -109,6 +109,12 @@ export default function blockMenuItems(
       keywords: "picture photo",
     },
     {
+      name: "tldraw_instance",
+      title: "tldraw Canvas", // Placeholder title
+      icon: <EmbedIcon />,
+      keywords: "drawing sketch canvas tldraw",
+    },
+    {
       name: "video",
       title: dictionary.video,
       icon: <EmbedIcon />,
