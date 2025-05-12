@@ -1,3 +1,4 @@
+import invariant from "invariant";
 import { Op, WhereOptions } from "sequelize";
 import isUUID from "validator/lib/isUUID";
 import { UrlHelper } from "@shared/utils/UrlHelper";
@@ -23,8 +24,6 @@ type Result = {
   document: Document;
   share: Share | null;
   collection: Collection | null;
-  share?: Share;
-  collection?: Collection | null;
   team: Team;
 };
 
