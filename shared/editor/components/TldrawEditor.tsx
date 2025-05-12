@@ -26,7 +26,7 @@ import type { Editor, TLUiContextMenuProps } from 'tldraw'
 // If this file is purely for client-side, it's fine.
 // If shared code is processed by a Node environment without CSS handling, this could fail.
 // For now, let's assume CSS imports are handled or ignored server-side.
-import 'tldraw/tldraw.css'
+// import 'tldraw/tldraw.css' // Moved to useEffect
 
 
 // [1]
@@ -59,6 +59,12 @@ function blurEditor(editor: Editor) {
 
 export default function InlineBehaviorExample() {
 	const [focusedEditor, setFocusedEditor] = useState<Editor | null>(null)
+
+	React.useEffect(() => {
+		if (typeof window !== 'undefined') {
+			import('tldraw/tldraw.css');
+		}
+	}, []);
 
 	return (
 		<Suspense fallback={<div>Loading tldraw...</div>}>
