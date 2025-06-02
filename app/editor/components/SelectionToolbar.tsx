@@ -14,7 +14,6 @@ import useDictionary from "~/hooks/useDictionary";
 import useEventListener from "~/hooks/useEventListener";
 import useMobile from "~/hooks/useMobile";
 import usePrevious from "~/hooks/usePrevious";
-import getPdfMenuItems from "../../editor/menus/pdfMenu";
 import getAttachmentMenuItems from "../menus/attachment";
 import getCodeMenuItems from "../menus/code";
 import getDividerMenuItems from "../menus/divider";
@@ -63,7 +62,7 @@ function useIsActive(state: EditorState) {
   }
   if (
     selection instanceof NodeSelection &&
-    ["image", "attachment", "pdf_document"].includes(selection.node.type.name) // Add pdf_document to node selection
+    ["image", "attachment"].includes(selection.node.type.name)
   ) {
     return true;
   }
@@ -185,9 +184,6 @@ export default function SelectionToolbar(props: Props) {
   const isAttachmentSelection =
     selection instanceof NodeSelection &&
     selection.node.type.name === "attachment";
-  const isPdfSelection = // Check for PDF node selection
-    selection instanceof NodeSelection &&
-    selection.node.type.name === "pdf_document";
   const isCodeSelection = isInCode(state, { onlyBlock: true });
   const isNoticeSelection = isInNotice(state);
 
@@ -205,9 +201,6 @@ export default function SelectionToolbar(props: Props) {
     items = readOnly ? [] : getImageMenuItems(state, dictionary);
   } else if (isAttachmentSelection) {
     items = readOnly ? [] : getAttachmentMenuItems(state, dictionary);
-  } else if (isPdfSelection) {
-    // Add case for PDF selection
-    items = readOnly ? [] : getPdfMenuItems(state, dictionary);
   } else if (isDividerSelection) {
     items = getDividerMenuItems(state, dictionary);
   } else if (readOnly) {
