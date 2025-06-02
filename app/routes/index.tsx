@@ -15,6 +15,7 @@ const SharedDocument = lazy(() => import("~/scenes/Document/Shared"));
 const Login = lazy(() => import("~/scenes/Login"));
 const Logout = lazy(() => import("~/scenes/Logout"));
 const OAuthAuthorize = lazy(() => import("~/scenes/Login/OAuthAuthorize"));
+const EditorOnly = lazy(() => import("~/scenes/EditorOnly")); // Import the new EditorOnly scene
 
 export default function Routes() {
   useQueryNotices();
@@ -45,6 +46,7 @@ export default function Routes() {
           <Route exact path="/logout" component={Logout} />
           <Route exact path="/desktop-redirect" component={DesktopRedirect} />
           <Route exact path="/oauth/authorize" component={OAuthAuthorize} />
+          <Route exact path="/simple" component={EditorOnly} /> {/* New route for stripped-down editor */}
 
           <Redirect exact from="/share/:shareId" to="/s/:shareId" />
           <Route exact path="/s/:shareId" component={SharedDocument} />
