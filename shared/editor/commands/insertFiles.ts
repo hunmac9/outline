@@ -171,26 +171,11 @@ const insertFiles = async function (
           }
 
           const [from, to] = result;
-          let newNode;
-
-          // Check if a specific nodeType (like pdf_document) was requested
-          if (
-            options.nodeType &&
-            options.nodeType === schema.nodes.pdf_document
-          ) {
-            newNode = options.nodeType.create({
-              href: src,
-              title: upload.file.name ?? dictionary.untitled,
-              size: upload.file.size,
-            });
-          } else {
-            // Default to attachment if no specific type or if type is not PDF
-            newNode = schema.nodes.attachment.create({
-              href: src,
-              title: upload.file.name ?? dictionary.untitled,
-              size: upload.file.size,
-            });
-          }
+          const newNode = schema.nodes.attachment.create({
+            href: src,
+            title: upload.file.name ?? dictionary.untitled,
+            size: upload.file.size,
+          });
 
           view.dispatch(
             view.state.tr

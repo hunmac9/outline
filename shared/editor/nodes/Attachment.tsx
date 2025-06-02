@@ -2,7 +2,7 @@ import { Token } from "markdown-it";
 import { DownloadIcon } from "outline-icons";
 import { NodeSpec, NodeType, Node as ProsemirrorNode } from "prosemirror-model";
 import { Command, NodeSelection } from "prosemirror-state";
-import * as React from "react";
+import React, {Suspense, lazy} from 'react';
 import { Trans } from "react-i18next";
 import { Primitive } from "utility-types";
 import { bytesToHumanReadable, getEventFiles } from "../../utils/files";
@@ -15,6 +15,14 @@ import { MarkdownSerializerState } from "../lib/markdown/serializer";
 import attachmentsRule from "../rules/links";
 import { ComponentProps } from "../types";
 import Node from "./Node";
+
+const PdfEmbedComponent = lazy(
+  () => import('../components/PdfEmbed')
+);
+
+const PdfLoading = () => (
+  <div style={{textAlign: 'center', padding: '20px'}}>Loading PDF...</div>
+);
 
 export default class Attachment extends Node {
   get name() {
@@ -38,6 +46,9 @@ export default class Attachment extends Node {
         size: {
           default: 0,
         },
+        height: {
+          default: 500,
+        },
       },
       group: "block",
       defining: true,
@@ -51,6 +62,12 @@ export default class Attachment extends Node {
             title: dom.innerText,
             href: dom.getAttribute("href"),
             size: parseInt(dom.dataset.size || "0", 10),
+            height:
+              dom.getAttribute("href") &&
+              dom.getAttribute("href")!.toLowerCase().endsWith('.pdf') &&
+              dom.dataset.height
+                ? parseInt(dom.dataset.height, 10)
+                : undefined,
           }),
         },
       ],
@@ -62,6 +79,9 @@ export default class Attachment extends Node {
           href: sanitizeUrl(node.attrs.href),
           download: node.attrs.title,
           "data-size": node.attrs.size,
+          ...(node.attrs.href && node.attrs.href.toLowerCase().endsWith('.pdf')
+            ? {'data-height': node.attrs.height}
+            : {}),
         },
         String(node.attrs.title),
       ],
@@ -80,11 +100,29 @@ export default class Attachment extends Node {
 
   component = (props: ComponentProps) => {
     const { isSelected, isEditable, theme, node } = props;
+    const { href, title, size, height } = node.attrs;
+
+    const isPdf = href && href.toLowerCase().endsWith('.pdf');
+
+    if (isPdf) {
+      return (
+        <Suspense fallback={<PdfLoading />}>
+          <PdfEmbedComponent
+            href={href}
+            height={height}
+            onSelect={this.handleSelect(props)}
+            theme={theme}
+            isEditable={isEditable}
+          />
+        </Suspense>
+      );
+    }
+
     return (
       <Widget
-        icon={<FileExtension title={node.attrs.title} />}
-        href={node.attrs.href}
-        title={node.attrs.title}
+        icon={<FileExtension title={title} />}
+        href={href}
+        title={title}
         onMouseDown={this.handleSelect(props)}
         onDoubleClick={() => {
           this.editor.commands.downloadAttachment();
@@ -96,8 +134,8 @@ export default class Attachment extends Node {
           }
         }}
         context={
-          node.attrs.href ? (
-            bytesToHumanReadable(node.attrs.size || "0")
+          href ? (
+            bytesToHumanReadable(size || "0")
           ) : (
             <>
               <Trans>Uploading</Trans>…
@@ -106,8 +144,9 @@ export default class Attachment extends Node {
         }
         isSelected={isSelected}
         theme={theme}
+        node={node}
       >
-        {node.attrs.href && !isEditable && <DownloadIcon size={20} />}
+        {href && !isEditable && <DownloadIcon size={20} />}
       </Widget>
     );
   };
@@ -184,11 +223,53 @@ export default class Attachment extends Node {
   parseMarkdown() {
     return {
       node: "attachment",
-      getAttrs: (tok: Token) => ({
-        href: tok.attrGet("href"),
-        title: tok.attrGet("title"),
-        size: tok.attrGet("size"),
-      }),
+      getAttrs: (tok: Token) => {
+        const href = tok.attrGet("href");
+        const linkText = tok.children?.[0]?.content || "";
+        let title = linkText;
+        let size = 0;
+
+        // Try to match "[title pdf:size]"
+        const pdfMatch = linkText.match(/^(.*?) +pdf:(\d+)$/i);
+        if (pdfMatch) {
+          title = pdfMatch[1].trim();
+          size = parseInt(pdfMatch[2], 10);
+        } else {
+          // Try to match "[title size]"
+          const genericMatch = linkText.match(/^(.*?) +(\d+)$/);
+          if (genericMatch) {
+            title = genericMatch[1].trim();
+            size = parseInt(genericMatch[2], 10);
+          }
+        }
+
+        // Fallback for title if no specific pattern matches, but href exists
+        if (!title && href) {
+          // Attempt to derive title from href (e.g., filename)
+          const parts = href.split('/');
+          const lastPart = parts.pop();
+          if (lastPart) {
+            // Remove query parameters or hash
+            title = lastPart.split('?')[0].split('#')[0];
+            // Decode URI components like %20 for space
+            try {
+              title = decodeURIComponent(title);
+            } catch (e) {
+              // If decoding fails, use the raw part
+            }
+          } else {
+            title = "Attachment";
+          }
+        } else if (!title) {
+          title = "Attachment";
+        }
+
+        return {
+          href,
+          title,
+          size,
+        };
+      },
     };
   }
 }

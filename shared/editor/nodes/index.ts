@@ -36,7 +36,6 @@ import Node from "./Node";
 import Notice from "./Notice";
 import OrderedList from "./OrderedList";
 import Paragraph from "./Paragraph";
-import Pdf from "./Pdf";
 import SimpleImage from "./SimpleImage";
 import Table from "./Table";
 import TableCell from "./TableCell";
@@ -109,7 +108,6 @@ export const richExtensions: Nodes = [
   Math,
   MathBlock,
   Mention,
-  Pdf,
   // Container type nodes should be last so that key handlers are registered for content inside
   // the container nodes first.
   ...listExtensions,
