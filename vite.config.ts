@@ -180,7 +180,6 @@ export default () =>
       webpackStats(),
     ],
     optimizeDeps: {
-      force: true,
       esbuildOptions: {
         keepNames: true,
         define: {
